@@ -155,7 +155,7 @@ int wmain(int argc, wchar_t *argv[])
 
 	MSG message;
 	HACCEL accelTable = nullptr;
-	while(GetMessage(&message, window, 0, 0) && !quit)
+	while(GetMessage(&message, nullptr, 0, 0) && !quit)
 	{
 		if (!TranslateAccelerator(message.hwnd, accelTable, &message))
 		{
