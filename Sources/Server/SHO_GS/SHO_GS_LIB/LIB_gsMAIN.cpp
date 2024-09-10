@@ -639,8 +639,10 @@ bool CLIB_GameSRV::CheckSTB_DropITEM ()
 	int iDropITEM;
 	tagITEM sITEM;
 
-	for (short nI=1; nI<g_TblDropITEM.m_nDataCnt; nI++) {
-		for (short nC=1; nC<g_TblDropITEM.m_nColCnt; nC++) {
+	for (short nI = 1; nI<g_TblDropITEM.m_nDataCnt; nI++)
+	{
+		for (short nC = 1; nC < g_TblDropITEM.m_nColCnt - 1; nC++)
+		{
 			iDropITEM = DROPITEM_ITEMNO( nI, nC );
 			if ( iDropITEM <= 0 )
 				continue;
