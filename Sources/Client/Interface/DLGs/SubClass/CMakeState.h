@@ -13,7 +13,7 @@ class CMakeState
 {
 public:
 	CMakeState(void);
-	~CMakeState(void);
+	virtual ~CMakeState(void);
 
 	virtual void Draw() = 0;
 	virtual void Update( POINT ptMouse) = 0;
