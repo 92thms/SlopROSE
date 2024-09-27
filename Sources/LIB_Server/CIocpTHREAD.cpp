@@ -97,7 +97,7 @@ void CIocpTHREAD::Execute()
 
 		if(0 == dwBytesIO)
 		{
-			g_LOG.CS_ODS(0xffff, "Returning false...");
+			g_LOG.CS_ODS(0xffff, "Returning false...\n");
 			STATUS_ReturnFALSE(lpOverlapped, dwCompletionKey);
 			continue;
 		}
