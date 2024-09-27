@@ -582,7 +582,10 @@ bool CZoneFILE::LoadZONE (char *szBaseDIR, short nZoneNO)
 	iCount = CUtil::ExtractFileName( NULL, szZoneFILE );
 	if (iCount > 0)
 	{
-		m_ZoneDIR.Set(szZoneFILE);
+		char *dir = new char[iCount + 1];
+		strncpy(dir, szZoneFILE, iCount);
+		dir[iCount] = 0;
+		m_ZoneDIR.Set(dir);
 		LogString (LOG_NORMAL, "zone folder :: %s \n", szZoneFILE);
 	}
 
