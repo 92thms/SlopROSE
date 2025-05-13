@@ -758,6 +758,7 @@ short classUSER::Cheat_set ( classUSER *pUSER, char *pArg1, char *pArg2, char *p
 					iValue = MAX_BASIC_ABLITY;
 
 				pUSER->m_BasicAbility.m_nBasicA[ nI ] = iValue;
+				pUSER->Update_SPEED();
 				return CHEAT_SEND;
 			}
 		}
