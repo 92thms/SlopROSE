@@ -213,6 +213,7 @@ void CObjAVT::SetPartITEM (short nEquipInvIDX)
 	COMPILE_TIME_ASSERT( EQUIP_IDX_WEAPON_L		== 8 );
 	COMPILE_TIME_ASSERT( EQUIP_IDX_NECKLACE		== 9 );
 	COMPILE_TIME_ASSERT( EQUIP_IDX_RING			== 10 );
+	COMPILE_TIME_ASSERT( EQUIP_IDX_EARRING		== 11);
 
 	short nPartNO = s_nEquipIdxToPartNO[ nEquipInvIDX ];
 	if ( nPartNO > 0 ) {
