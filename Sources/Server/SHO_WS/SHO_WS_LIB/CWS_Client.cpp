@@ -73,6 +73,7 @@ bool CWS_Client::Send_wsv_MOVE_SERVER( short nZoneNO )
 	pCPacket->AppendString( pServer->m_ServerIP.Get() );
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -90,6 +91,7 @@ bool CWS_Client::Send_srv_ERROR( WORD wErrCODE )
 	pCPacket->m_HEADER.m_nSize = sizeof( srv_ERROR );
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -115,6 +117,7 @@ bool CWS_Client::Send_wsv_CHATROOM (BYTE btCMD, WORD wUserID, char *szSTR)
 		pCPacket->AppendString( szSTR );
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -136,6 +139,7 @@ bool CWS_Client::Send_gsv_GM_COMMAND( char *szAccount, BYTE btCMD, WORD wBlockTI
 
 	this->SendPacket( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -154,6 +158,7 @@ bool CWS_Client::Send_srv_JOIN_SERVER_REPLY (BYTE btResult, DWORD dwRecvSeqNO, D
 	pCPacket->m_srv_JOIN_SERVER_REPLY.m_dwPayFLAG = dwPayFlag;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -262,6 +267,7 @@ bool CWS_Client::Send_tag_MCMD_HEADER( BYTE btCMD, char *szStr )
 		pCPacket->AppendString( szStr );
 
 	this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -293,6 +299,7 @@ bool CWS_Client::Recv_cli_MCMD_APPEND_REQ( t_PACKET *pPacket )
 	pCPacket->AppendString( this->Get_NAME() );
 
 	pDestUSER->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -351,6 +358,7 @@ bool CWS_Client::Send_gsv_WHISPER (char *szFromAccount, char *szMessage)
 	pCPacket->AppendString( szMessage );
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -402,6 +410,7 @@ bool CWS_Client::Send_wsv_CLAN_COMMAND( BYTE btCMD, ... )
 
 	this->SendPacket( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -565,6 +574,7 @@ short CWS_Client::GuildCMD (char *szCMD)
 	//	this->Recv_cli_CLAN_COMMAND( (t_PACKET*)( pCPacket->m_pDATA ) );
 	//}
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return 0;
 }
 
@@ -618,7 +628,7 @@ bool CWS_Client::Send_wsv_CLANMARK_REPLY( DWORD dwClanID, WORD wMarkCRC, BYTE *p
 	pCPacket->AppendData( pMarkData, nDataLen );
 
 	this->SendPacket( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -632,7 +642,7 @@ bool CWS_Client::Recv_mon_SERVER_LIST_REQ( t_PACKET *pPacket )
 	g_pListSERVER->Make_srv_SERVER_LIST_REPLY( pCPacket );
 
 	this->SendPacket( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 bool CWS_Client::Recv_mon_SERVER_STATUS_REQ( t_PACKET *pPacket )
@@ -649,7 +659,7 @@ bool CWS_Client::Recv_mon_SERVER_STATUS_REQ( t_PACKET *pPacket )
 	pCPacket->m_wls_SERVER_STATUS_REPLY.m_iUserCNT   = g_pUserLIST->Get_AccountCNT();
 
 	this->SendPacket( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -825,6 +835,8 @@ void CWS_ListCLIENT::Send_wsv_CREATE_CHAR (int iSocketIDX, BYTE btResult, BYTE b
 	pCPacket->m_wsv_CREATE_CHAR.m_btIsPlatinumCHAR = btIsPlatinumCHAR;
 
 	SendPacketToSocketIDX( iSocketIDX, pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -844,6 +856,8 @@ void CWS_ListCLIENT::Send_wsv_MEMO (int iSocketIDX, BYTE btTYPE, short nRecvCNT)
 		pCPacket->m_HEADER.m_nSize = sizeof( wsv_MEMO );
 
 	this->SendPacketToSocketIDX( iSocketIDX, pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1142,6 +1156,7 @@ void CWS_ListCLIENT::Send_wls_ACCOUNT_LIST ()
 
 			if ( pCPacket->m_HEADER.m_nSize >= MAX_PACKET_SIZE - 50 ) {
 				g_pSockLSV->m_SockLSV.Packet_Register2SendQ( pCPacket );
+				Packet_ReleaseNUnlock( pCPacket );
 
 				pCPacket = Packet_AllocNLock ();
 				//////////////////////////////////////////////////////////////////////////
@@ -1162,6 +1177,8 @@ void CWS_ListCLIENT::Send_wls_ACCOUNT_LIST ()
 	if ( 0 != pCPacket->m_wls_ACCOUNT_LIST.m_nAccountCNT ) {
 		g_pSockLSV->m_SockLSV.Packet_Register2SendQ( pCPacket );
 	}
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1197,4 +1214,6 @@ void CWS_ListCLIENT::Check_SocketALIVE ()
 		}
 	}
 	m_csHashACCOUNT.Unlock ();
+
+	Packet_ReleaseNUnlock( pCPacket );
 }

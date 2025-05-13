@@ -72,6 +72,8 @@ void WS_lsvSOCKET::Send_srv_ACTIVE_MODE (bool bActive)
 	pCPacket->m_srv_ACTIVE_MODE.m_bActive = bActive;
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -104,6 +106,7 @@ void WS_lsvSOCKET::Send_zws_SERVER_INFO ()
 		// 현재 접속되어 있는 사용자 리스트를 전송...
 	}
 //	this->Unlock ();
+	Packet_ReleaseNUnlock( pCPacket );
 
 	this->Send_wls_ACCOUNT_LIST ();
 	this->Send_wls_CHANNEL_LIST ();
@@ -119,6 +122,8 @@ void WS_lsvSOCKET::Send_wls_CHANNEL_LIST ()
 	// 로그인 서버에 채널 서버 정보 전송.
 	g_pListSERVER->Make_wls_CHANNEL_LIST( pCPacket );
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 
@@ -144,6 +149,7 @@ void WS_lsvSOCKET::Send_zws_CONFIRM_ACCOUNT_REQ (DWORD dwSocketID, t_PACKET *pPa
 		m_SockLSV.Packet_Register2SendQ( pCPacket );
 	}
 //	this->Unlock ();
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -161,6 +167,7 @@ void WS_lsvSOCKET::Send_zws_SUB_ACCOUNT (DWORD dwLSID, char *szAccount)
 	pCPacket->AppendString( szAccount );
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -184,6 +191,7 @@ void WS_lsvSOCKET::Recv_lsv_CHECK_ALIVE ()
 		m_SockLSV.Packet_Register2SendQ( pCPacket );
 	}
 //	this->Unlock ();
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -224,6 +232,8 @@ void WS_lsvSOCKET::Recv_wls_KICK_ACCOUNT ()
 			pCPacket->AppendString( szAccount );
 
 			g_pListSERVER->Send_ToWORLD( pCPacket );
+
+			Packet_ReleaseNUnlock( pCPacket );
 		}
 
 		// 채널서버가 정보전송없이 죽었을경우... 월드서버 비트는 삭제되고 채널서버 비트는 살아있을수 있다.

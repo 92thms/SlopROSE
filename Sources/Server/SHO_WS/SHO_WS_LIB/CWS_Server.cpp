@@ -149,6 +149,8 @@ bool CWS_Server::Send_str_PACKET (WORD wType, char *szString)
 
 	this->Send_Start( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
     return true;
 }
 
@@ -171,6 +173,7 @@ bool CWS_Server::Send_wsv_CHEAT_REQ( t_PACKET *pPacket, DWORD dwReqGSID, DWORD d
 	pCPacket->AppendString( szCode );// pPacket->m_gsv_CHEAT_REQ.m_szCheatCODE );
 	this->SendPacket( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -220,6 +223,8 @@ bool CWS_Server::Recv_zws_SERVER_INFO (t_PACKET *pPacket)
 
 	this->SendPacket( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	this->LockLI ();
 	this->m_pSrvListITEM = SHO_WS::ExeAPI()->AddChannelITEM( this, m_btChannelNO, szServerName, m_ServerIP.Get(), m_wListenPORT );
 	this->UnlockLI ();
@@ -254,6 +259,8 @@ bool CWS_Server::Send_wls_CONFIRM_ACCOUNT_REPLY (BYTE btResult, DWORD dwWSID, DW
 	}
 
 	this->Send_Start( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
     return true;
 }
@@ -758,6 +765,8 @@ void CWS_ListSERVER::Send_gsv_ANNOUNCE_CHAT( char *szMessage, char *szAccount )
 		g_LOG.CS_ODS( 0xffff, "[Announce] %s\n", szMessage );
 	}
 	this->Send_ToWORLD( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -852,6 +861,7 @@ bool CWS_ListSERVER::Send_zws_SET_USER_CLAN( CWS_Client *pClient )
 
 		pChannel->Send_Start( pCPacket );
 
+		Packet_ReleaseNUnlock( pCPacket );
 		return true;
 	}
 	return false;
@@ -874,6 +884,7 @@ bool CWS_ListSERVER::Send_zws_DEL_USER_CLAN( CWS_Client *pClient )
 
 		pChannel->Send_Start( pCPacket );
 
+		Packet_ReleaseNUnlock( pCPacket );
 		return true;
 	}
 	return false;

@@ -58,6 +58,14 @@
 
 	#define	DEF_GAME_PARTY_POOL_SIZE	4096
 	#define	INC_GAME_PARTY_POOL_SIZE	1024
+
+	#define	INC_RECV_IO_POOL_SIZE		2048
+	#define	INC_SEND_IO_POOL_SIZE		8192
+	#define	INC_PACKET_POOL_SIZE		8192
+
+	#define	DEF_RECV_IO_POOL_SIZE		( DEF_GAME_USER_POOL_SIZE + DEF_GAME_USER_POOL_SIZE/2 )
+	#define	DEF_SEND_IO_POOL_SIZE		32768
+	#define	DEF_PACKET_POOL_SIZE		49152	// 32768+16834
 #endif
 
 //-------------------------------------------------------------------------------------------------
@@ -468,7 +476,12 @@ CLIB_GameSRV::~CLIB_GameSRV ()
 	g_pCharDATA->Destroy ();
 
 	SAFE_DELETE( g_pPacketCODEC );
-    CStr::Free ();
+
+	CPoolSENDIO::Destroy();
+	CPoolRECVIO::Destroy();
+	CPoolPACKET::Destroy();
+
+	CStr::Free();
 
 	if ( CSocketWND::GetInstance() )
 		CSocketWND::GetInstance()->Destroy();
@@ -520,6 +533,10 @@ void CLIB_GameSRV::SystemINIT( HINSTANCE hInstance, char *szBaseDataDIR, int iLa
 	m_BaseDataDIR.Printf("%s\\", szBaseDataDIR );
 
 	g_pPacketCODEC = new CPacketCODEC;
+
+	CPoolPACKET::Instance (DEF_PACKET_POOL_SIZE,	INC_PACKET_POOL_SIZE );
+	CPoolRECVIO::Instance (DEF_RECV_IO_POOL_SIZE,	INC_RECV_IO_POOL_SIZE);
+	CPoolSENDIO::Instance (DEF_SEND_IO_POOL_SIZE,	INC_SEND_IO_POOL_SIZE);
 
 	g_pCharDATA = CCharDatLIST::Instance ();
 
@@ -1264,7 +1281,7 @@ bool CLIB_GameSRV::Start( HWND hMainWND, char *szServerName, char *szClientListe
 	m_pWorldTIMER = new CTimer( m_hMainWND, GS_TIMER_WORLD_TIME, WORLD_TIME_TICK, (TIMERPROC)GS_TimerProc );
 	m_pWorldTIMER->Start ();
 
-	g_pUserLIST->Active( m_iListenPortNO, 5*60 );	// 5분 대기..
+	g_pUserLIST->Active( m_iListenPortNO, MAX_ZONE_USER_BUFF, 5 * 60);	// 5분 대기..
 
 //	g_pSockLSV->Send_gsv_START( xxx )
 

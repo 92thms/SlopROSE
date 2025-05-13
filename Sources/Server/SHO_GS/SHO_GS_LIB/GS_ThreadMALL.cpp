@@ -160,7 +160,7 @@ bool GS_CThreadMALL::Give_MallITEM ( tagQueryDATA *pSqlPACKET, BYTE btMallInvIDX
 			pCPacket->m_gsv_MALL_ITEM_REPLY.m_BringITEM[0].m_ITEM = pUSER->m_MALL.m_ITEMS[ btMallInvIDX ].m_ITEM;
 
 			pUSER->Send_Start( pCPacket );
-
+			Packet_ReleaseNUnlock( pCPacket );
 			return true;
 		}
 	} else {
@@ -249,7 +249,7 @@ bool GS_CThreadMALL::Bring_MallITEM ( tagQueryDATA *pSqlPACKET, BYTE btMallInvID
 			}
 
 			pUSER->Send_Start( pCPacket );
-
+			Packet_ReleaseNUnlock( pCPacket );
 			return true;
 		}
 	}
@@ -269,7 +269,7 @@ bool GS_CThreadMALL::Send_gsv_MALL_ITEM_REPLAY(classUSER *pUSER, BYTE btType, BY
 	pCPacket->m_gsv_MALL_ITEM_REPLY.m_btCntOrIdx = btData;
 
 	pUSER->Send_Start( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -342,6 +342,7 @@ bool GS_CThreadMALL::List_MallITEM( int iScoketIDX, char *szAccount )
 					pCPacket->m_gsv_MALL_ITEM_REPLY.m_btCntOrIdx = btCnt;
 
 					pUSER->Send_Start( pCPacket );
+					Packet_ReleaseNUnlock( pCPacket );
 
 					btCnt = 0;
 					pCPacket = Packet_AllocNLock ();
@@ -355,6 +356,7 @@ bool GS_CThreadMALL::List_MallITEM( int iScoketIDX, char *szAccount )
 				pCPacket->m_gsv_MALL_ITEM_REPLY.m_btCntOrIdx = btCnt;
 				pUSER->Send_Start( pCPacket );
 			}
+			Packet_ReleaseNUnlock( pCPacket );
 
 			// 목록끝...
 			this->Send_gsv_MALL_ITEM_REPLAY( pUSER, REPLY_MALL_ITEM_LIST_END );

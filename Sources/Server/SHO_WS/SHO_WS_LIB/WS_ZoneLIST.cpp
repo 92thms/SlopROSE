@@ -67,6 +67,8 @@ void WS_ZoneLIST::Set_WorldVAR (short nVarIDX, short nValue)
 
 	g_pListSERVER->Send_ToWORLD( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	this->Save_WorldVAR ();
 }
 

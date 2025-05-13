@@ -78,6 +78,7 @@ void GS_lsvSOCKET::Send_zws_SERVER_INFO ()
 	pCPacket->AppendString( pGSV->GetServerIP() );
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	// 로그인 서버가 도중에 뻣얻을경우 대비...
 	// 현재 접속되어 있는 사용자 리스트를 전송...
@@ -98,6 +99,7 @@ void GS_lsvSOCKET::Send_srv_SET_WORLD_VAR (short nVarIDX, short nValue)
 	pCPacket->m_srv_SET_WORLD_VAR.m_nValue[ 0 ] = nValue;
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 }
 void GS_lsvSOCKET::Recv_srv_SET_WORLD_VAR ()
 {
@@ -128,6 +130,7 @@ void GS_lsvSOCKET::Send_zws_CONFIRM_ACCOUNT_REQ (DWORD dwSocketID, t_PACKET *pPa
 	// pCPacket->AppendString ( szAccount )
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -144,6 +147,7 @@ void GS_lsvSOCKET::Send_zws_SUB_ACCOUNT (DWORD dwLSID, char *szAccount)
 	pCPacket->AppendString( szAccount );
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -156,6 +160,7 @@ void GS_lsvSOCKET::Recv_lsv_CHECK_ALIVE ()
 	pCPacket->m_HEADER.m_nSize = sizeof( lsv_CHECK_GSV );
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -240,6 +245,7 @@ void GS_lsvSOCKET::Send_gsv_CHEAT_REQ( classUSER *pUSER, DWORD dwReqWSID, DWORD 
 	}
 //	this->Unlock ();
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return;
 }
 
@@ -444,6 +450,8 @@ void GS_lsvSOCKET::Send_srv_ACTIVE_MODE (bool bActive)
 	pCPacket->m_srv_ACTIVE_MODE.m_bActive = bActive;
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 void GS_lsvSOCKET::Send_srv_USER_LIMIT (DWORD dwLimit)
@@ -458,6 +466,8 @@ void GS_lsvSOCKET::Send_srv_USER_LIMIT (DWORD dwLimit)
 	pCPacket->m_srv_USER_LIMIT.m_dwUserLIMIT = dwLimit;
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -479,6 +489,8 @@ void GS_lsvSOCKET::Send_wls_CHANNEL_LIST ()
 	pCPacket->AppendString( pGSV->GetServerName() );
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -533,6 +545,7 @@ bool GS_lsvSOCKET::Send_gsv_CHANGE_CHAR( classUSER *pUSER )
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
 #endif
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -551,6 +564,7 @@ bool GS_lsvSOCKET::Send_zws_CREATE_CLAN( DWORD dwWSID, t_HASHKEY HashCHAR )
 
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -564,6 +578,7 @@ bool GS_lsvSOCKET::Send_gsv_ADJ_CLAN_VAR( t_PACKET *pPacket )
 	::CopyMemory(pCPacket->m_pDATA, pPacket->m_pDATA, pPacket->m_HEADER.m_nSize );
 	m_SockLSV.Packet_Register2SendQ( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 

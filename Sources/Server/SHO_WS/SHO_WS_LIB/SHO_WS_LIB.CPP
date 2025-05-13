@@ -83,6 +83,16 @@ CThreadGUILD	*g_pThreadGUILD = NULL;
 #define	DEF_SERVER_POOL_SIZE	64
 #define	INC_SERVER_POOL_SIZE	16
 
+
+#define	DEF_RECV_IO_POOL_SIZE		( DEF_CLIENT_POOL_SIZE + INC_CLIENT_POOL_SIZE )
+#define	INC_RECV_IO_POOL_SIZE		( INC_CLIENT_POOL_SIZE )
+
+#define	DEF_SEND_IO_POOL_SIZE		( DEF_CLIENT_POOL_SIZE + INC_CLIENT_POOL_SIZE )
+#define	INC_SEND_IO_POOL_SIZE		( INC_CLIENT_POOL_SIZE )
+
+#define	DEF_PACKET_POOL_SIZE		( DEF_RECV_IO_POOL_SIZE + DEF_SEND_IO_POOL_SIZE )
+#define	INC_PACKET_POOL_SIZE		( INC_CLIENT_POOL_SIZE )
+
 #define	WM_LSVSOCK_MSG	( WM_SOCKETWND_MSG+0 )
 #define	WM_LOGSOCK_MSG	( WM_SOCKETWND_MSG+1 )
 
@@ -225,6 +235,10 @@ void SHO_WS::SystemINIT( HINSTANCE hInstance, char *szBaseDataDIR, int iLangType
 	g_pUserLIST = new CWS_ListCLIENT( DEF_CLIENT_POOL_SIZE, INC_CLIENT_POOL_SIZE );
 	g_pListSERVER = new CWS_ListSERVER( DEF_SERVER_POOL_SIZE, INC_SERVER_POOL_SIZE );
 
+	CPoolPACKET::Instance (DEF_PACKET_POOL_SIZE,	INC_PACKET_POOL_SIZE );
+	CPoolRECVIO::Instance (DEF_RECV_IO_POOL_SIZE,	INC_RECV_IO_POOL_SIZE);
+	CPoolSENDIO::Instance (DEF_SEND_IO_POOL_SIZE,	INC_SEND_IO_POOL_SIZE);
+
 	Load_BasicDATA ();
 
 	m_pWorldTIMER = NULL;
@@ -254,6 +268,11 @@ SHO_WS::~SHO_WS ()
 	SAFE_DELETE( g_pListSERVER );
 
 //	SAFE_DELETE( g_pPartyBUFF );
+
+
+	CPoolRECVIO::Destroy ();
+	CPoolSENDIO::Destroy ();
+	CPoolPACKET::Destroy ();
 
 	SAFE_DELETE( g_pPacketCODEC );
 
@@ -347,8 +366,8 @@ bool SHO_WS::Start (HWND hMainWND,
 
 	g_pChatROOMs = new CChatRoomLIST( MAX_CHAT_ROOMS );
 
-	g_pUserLIST->Active( m_iClientListenPortNO, 5*60 );	// 5분 대기
-	g_pListSERVER->Active( m_iServerListenPortNO, 3*60 );					// 3분 대기
+	g_pUserLIST->Active( m_iClientListenPortNO, MAX_WORLD_USER_UBFF, 5 * 60 );	// 5분 대기
+	g_pListSERVER->Active( m_iServerListenPortNO, MAX_WORLD_USER_UBFF, 3 * 60 );					// 3분 대기
 
 	m_dwRandomSEED = ::timeGetTime();
 	g_pPacketCODEC->Init( m_dwRandomSEED );
@@ -395,7 +414,7 @@ void SHO_WS::Shutdown ()
 //-------------------------------------------------------------------------------------------------
 void SHO_WS::StartCLI_SOCKET ()
 {
-	g_pUserLIST->Active( m_iClientListenPortNO, 5*60 );	// 5분 대기
+	g_pUserLIST->Active( m_iClientListenPortNO, MAX_WORLD_USER_UBFF, 5 * 60 );	// 5분 대기
 }
 
 void SHO_WS::ShutdownCLI_SOCKET ()

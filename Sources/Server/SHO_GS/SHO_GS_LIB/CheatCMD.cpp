@@ -299,6 +299,7 @@ short classUSER::Cheat_npc ( CStrVAR *pStrVAR, CObjNPC *pNPC, int iNpcIDX, char 
 	pCPacket->AppendData( pNPC->m_pVAR, sizeof( tagObjVAR ) );
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 	
 	pStrVAR->Printf ("%s Zone:%d, Pos(%.0f,%.0f)", pNPC->Get_NAME(), pNPC->GetZONE()->Get_ZoneNO(), pNPC->m_PosCUR.x, pNPC->m_PosCUR.y );
 	this->Send_gsv_WHISPER( "SERVER", pStrVAR->Get() );
@@ -548,6 +549,7 @@ short classUSER::Cheat_get ( CStrVAR *pStrVAR, char *pArg1, char *pArg2, char *s
 		pCPacket->AppendData( this->GetZONE()->m_Economy.m_pEconomy, sizeof( tagECONOMY ) );
 
 		this->SendPacket( pCPacket );
+		Packet_ReleaseNUnlock( pCPacket );
 		
 		return CHEAT_NOLOG;
 	} else

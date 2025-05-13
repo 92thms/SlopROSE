@@ -103,7 +103,7 @@ bool classUSER::Send_gsv_ADJ_CLAN_VAR (BYTE btVarType, int iValue)
 		pCPacket->m_gsv_ADJ_CLAN_VAR.m_iAdjValue = iValue;		// 1;
 
 		g_pThreadGUILD->Add_ClanCMD( GCMD_ADJ_VAR, this->m_iSocketIDX, (t_PACKET*)( pCPacket->m_pDATA ), this->Get_NAME() );
-
+		Packet_ReleaseNUnlock( pCPacket );
 		return true;
 	}
 	return false;
@@ -283,7 +283,7 @@ bool classUSER::Send_wsv_CLANMARK_REPLY( DWORD dwClanID, WORD wMarkCRC, BYTE *pM
 	pCPacket->AppendData( pMarkData, nDataLen );
 
 	this->SendPacket( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -704,6 +704,7 @@ short classUSER::Parse_CheatCODE (char *szCode)
 
         this->SendPacket( pCPacket );
 
+        Packet_ReleaseNUnlock( pCPacket );
 		return CHEAT_SEND;
 	}
 
@@ -925,6 +926,7 @@ short classUSER::GuildCMD (char *szCMD)
 // #endif
 	}
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return 0;
 }
 
@@ -1196,6 +1198,7 @@ bool classUSER::Send_gsv_LOGOUT_REPLY( WORD wWaitSec )
 
 	this->Send_Start( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -1222,6 +1225,8 @@ bool classUSER::Send_gsv_CHECK_NPC_EVENT( short nNpcIDX )
 	pCPacket->m_gsv_CHECK_NPC_EVENT.m_nNpcIDX = nNpcIDX;
 	this->Send_Start( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -1242,6 +1247,8 @@ bool classUSER::Send_gsv_SET_HPnMP (BYTE btApply)
 	pCPacket->m_gsv_SET_HPnMP.m_nMP = ( btApply & 0x02 ) ? this->Get_MP() : -1;
 
 	this->SendPacketToPARTY( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -1268,6 +1275,7 @@ bool classUSER::Send_wsv_CHATROOM (BYTE btCMD, WORD wUserID, char *szSTR)
 		pCPacket->AppendString( szSTR );
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 #endif
 	return true;
 }
@@ -1287,7 +1295,7 @@ bool classUSER::Send_gsv_USE_ITEM( short nItemNO, short nInvIDX )
 	pCPacket->m_gsv_USE_ITEM.m_btInvIDX[ 0 ] = (BYTE)nInvIDX;
 
 	this->SendPacket( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -1306,6 +1314,8 @@ bool classUSER::Use_pITEM( tagITEM *pITEM )
 	this->GetZONE()->SendPacketToSectors( this, pCPacket );
 	// 파티원 한테도 ???
 	// this->SendPacketToPartyExecpNearUSER( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
 	// 지속성 효과 아이템인가 ??
 	if ( USEITME_STATUS_STB( pITEM->m_nItemNo ) ) {
@@ -1519,6 +1529,8 @@ bool classUSER::Send_gsv_SET_MONEYnINV( classPACKET *pCPacket )
 		this->SendPacket( pCPacket );
 	}
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -1540,6 +1552,7 @@ bool classUSER::Send_gsv_GM_COMMAND( char *szAccount, BYTE btCMD, WORD wBlockTIM
 
 	this->SendPacket( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -1556,6 +1569,7 @@ bool classUSER::Send_gsv_SET_MONEYONLY (WORD wType)
 	pCPacket->m_gsv_SET_MONEY_ONLY.m_i64Money  = this->GetCur_MONEY();
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -1588,6 +1602,7 @@ bool classUSER::Send_srv_JOIN_SERVER_REPLY (t_PACKET *pRecvPket, char *szAccount
 
 	this->SendPacket( pCPacket );
 	this->m_iRecvSeqNO = dwRecvSeqNO;
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -1674,6 +1689,8 @@ bool classUSER::Send_gsv_JOIN_ZONE (CZoneTHREAD *pZONE)
 
     this->SendPacket( pCPacket );
 
+    Packet_ReleaseNUnlock( pCPacket );
+
 	// 자신에게 무계비율 설정.
 	return this->Recv_cli_SET_WEIGHT_RATE( this->m_btWeightRate );
 }
@@ -1701,6 +1718,7 @@ bool classUSER::Send_gsv_INVENTORYnQUEST_DATA (void)
 		pCPacket->m_gsv_INVENTORY_DATA.m_INV.m_ItemLIST[ iC ] = this->m_Inventory.m_ItemLIST[ iC ];
 
     this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 #ifdef	__APPLY_EXTAND_QUEST_VAR
 	////////////------------------ 임시... 아래 패킷이 안가면 클라이언트에서 진행안됨
@@ -1715,6 +1733,7 @@ bool classUSER::Send_gsv_INVENTORYnQUEST_DATA (void)
 	//	// ::CopyMemory( &pCPacket->m_gsv_QUEST_DATA.m_WishLIST, &this->m_WishLIST, sizeof( tagWishLIST ) );
 
 	//	this->SendPacket( pCPacket );
+	//	Packet_ReleaseNUnlock( pCPacket );
 	//}
 	////////////------------------
 
@@ -1728,6 +1747,7 @@ bool classUSER::Send_gsv_INVENTORYnQUEST_DATA (void)
 
 	::CopyMemory( &pCPacket->m_gsv_QUEST_ONLY.m_Quests, &this->m_Quests, sizeof( tagQuestData ) );
     this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	// 구입 희망 목록
     pCPacket = Packet_AllocNLock ();
@@ -1739,6 +1759,7 @@ bool classUSER::Send_gsv_INVENTORYnQUEST_DATA (void)
 
 	::CopyMemory( &pCPacket->m_gsv_WISH_LIST.m_WishLIST, &this->m_WishLIST, sizeof( tagWishLIST ) );
     this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 #else
 	pCPacket = Packet_AllocNLock ();
 	if ( pCPacket ) {
@@ -1749,6 +1770,7 @@ bool classUSER::Send_gsv_INVENTORYnQUEST_DATA (void)
 		::CopyMemory( &pCPacket->m_gsv_QUEST_DATA.m_WishLIST, &this->m_WishLIST, sizeof( tagWishLIST ) );
 
 		this->SendPacket( pCPacket );
+		Packet_ReleaseNUnlock( pCPacket );
 	}
 #endif
 
@@ -1770,6 +1792,7 @@ bool classUSER::Send_gsv_SETEXP (WORD wFromObjIDX)
 	pCPacket->m_gsv_SETEXP.m_wFromObjIDX = wFromObjIDX;
 
 	this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -1806,6 +1829,7 @@ bool classUSER::Send_gsv_LEVELUP (short nLevelDIFF)
 
 	//TODO:: 이동 스피드가 바뀌었으면 주변에 전동...
 	this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
     pCPacket = Packet_AllocNLock ();
 	if ( !pCPacket ) 
@@ -1817,6 +1841,7 @@ bool classUSER::Send_gsv_LEVELUP (short nLevelDIFF)
 	pCPacket->m_gsv_LEVELUP.m_wObjectIDX= this->Get_INDEX ();
 
     this->GetZONE()->SendPacketToSectors( this, pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	if ( this->GetPARTY() ) {
 		this->m_pPartyBUFF->Member_LevelUP( this->m_nPartyPOS, nLevelDIFF );
@@ -1843,6 +1868,7 @@ bool classUSER::Send_gsv_TELEPORT_REPLY (tPOINTF &PosWARP, short nZoneNO )
 	pCPacket->m_gsv_TELEPORT_REPLY.m_btRideMODE = this->m_btRideMODE;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 	
 	return true;
 }
@@ -1972,6 +1998,7 @@ bool classUSER::Send_gsv_ADJUST_POS (bool bOnlySelf)
 		this->SendPacket( pCPacket );
 	else
 		this->GetZONE()->SendPacketToSectors( this, pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2022,6 +2049,7 @@ BYTE classUSER::Send_gsv_SKILL_LEARN_REPLY (short nSkillIDX, bool bCheckCOND)
 	pCPacket->m_gsv_SKILL_LEARN_REPLY.m_nSkillPOINT = this->GetCur_SkillPOINT ();
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return btResult;
 }
@@ -2040,6 +2068,7 @@ bool classUSER::Send_gsv_HP_REPLY (int iObjectIDX, int iHP)
 	pCPacket->m_gsv_HP_REPLY.m_iHP = iHP;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2058,6 +2087,7 @@ bool classUSER::Send_gsv_WHISPER (char *szFromAccount, char *szMessage)
 	pCPacket->AppendString( szMessage );
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2077,6 +2107,7 @@ bool classUSER::Send_gsv_TRADE_P2P (int iObjectIDX, BYTE btResult, char cTradeSL
 	pCPacket->m_gsv_TRADE_P2P.m_cTradeSLOT = cTradeSLOT;
 
 	this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2095,6 +2126,7 @@ bool classUSER::Send_gsv_TRADE_P2P_ITEM (char cTradeSLOT, tagITEM &sITEM)
 	pCPacket->m_gsv_TRADE_P2P_ITEM.m_ITEM = sITEM;
 
 	this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2156,9 +2188,11 @@ bool classUSER::Send_gsv_BANK_ITEM_LIST (bool bNewBank)
 	pCPacket->AppendData( &this->m_Bank.m_i64ZULY, sizeof(__int64) );
 
 	this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	if ( pCPacket2 ) {
 		this->SendPacket( pCPacket2 );
+		Packet_ReleaseNUnlock( pCPacket2 );
 	}
 
 	return true;
@@ -2178,6 +2212,7 @@ bool classUSER::Send_gsv_BANK_LIST_REPLY (BYTE btReply)
 	pCPacket->m_gsv_BANK_LIST_REPLY.m_btItemCNT = 0;
 
 	this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2196,6 +2231,7 @@ bool classUSER::Send_gsv_PARTY_REQ(int iObjectIDXorTAG, BYTE btReq)
 	pCPacket->m_gsv_PARTY_REQ.m_dwFromIDXorTAG = iObjectIDXorTAG;
 
 	this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2212,6 +2248,7 @@ bool classUSER::Send_gsv_PARTY_REPLY(int iObjectIDXorTAG, BYTE btReply)
 	pCPacket->m_gsv_PARTY_REPLY.m_dwFromIDXorTAG = iObjectIDXorTAG;
 
 	this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2232,6 +2269,7 @@ bool classUSER::Send_gsv_SET_INV_ONLY (BYTE btInvIDX, tagITEM *pITEM, WORD wType
 	pCPacket->m_gsv_SET_INV_ONLY.m_sInvITEM[ 0 ].m_ITEM     = *pITEM;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2256,6 +2294,7 @@ bool classUSER::Send_gsv_SET_TWO_INV_ONLY (WORD wType, BYTE btInvIdx1, tagITEM *
 	pCPacket->m_gsv_SET_INV_ONLY.m_sInvITEM[ 1 ].m_ITEM     = *pITEM2;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2277,7 +2316,7 @@ bool classUSER::Send_gsv_RELAY_REQ( WORD wRelayTYPE, short nZoneGOTO, tPOINTF &P
 	pCPacket->m_gsv_RELAY_REQ.m_PosCALL		= PosGOTO;
 
 	this->SendPacket( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -2297,6 +2336,8 @@ bool classUSER::Recv_cli_STRESS_TEST( t_PACKET *pPacket )
 	_ASSERT( pCPacket->m_HEADER.m_nSize >= sizeof(t_PACKETHEADER ) );
 
 	g_pUserLIST->Send_cli_STRESS_TEST( pCPacket );
+
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 	*/
@@ -2549,6 +2590,7 @@ bool classUSER::Recv_cli_SET_VAR_REQ( t_PACKET *pPacket )
 	pCPacket->m_gsv_SET_VAR_REPLY.m_iValue	  = iValue;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 */
@@ -2608,6 +2650,7 @@ short classUSER::Recv_cli_ALLIED_CHAT( t_PACKET *pPacket )
 			pCPacket->AppendString( szMsg );
 
 			this->GetZONE()->SendTeamPacketToSectors( this, pCPacket, this->Get_TeamNO() );
+			Packet_ReleaseNUnlock( pCPacket );
 		}
     }
 
@@ -2637,6 +2680,7 @@ short classUSER::Recv_cli_ALLIED_SHOUT( t_PACKET *pPacket )
 			pCPacket->AppendString( szMsg );
 
 			this->GetZONE()->SendShout( this, pCPacket, this->Get_TeamNO() );
+			Packet_ReleaseNUnlock( pCPacket );
 		}
     }
 
@@ -2766,6 +2810,7 @@ short classUSER::Recv_cli_PARTY_CHAT( t_PACKET *pPacket )
         pCPacket->AppendString( szMsg );
 
         this->SendPacketToPARTY( pCPacket );
+        Packet_ReleaseNUnlock( pCPacket );
     }
 
 	return RET_OK;
@@ -2932,6 +2977,7 @@ bool classUSER::Recv_cli_SET_WEIGHT_RATE( BYTE btWeightRate/*t_PACKET *pPacket*/
 	} else {
 		this->SendPacket( pCPacket );
 	}
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -2976,6 +3022,7 @@ bool classUSER::Send_gsv_CHANGE_SKIN( WORD wAbilityTYPE, int iValue )
 	pCPacket->m_gsv_CHANGE_SKIN.m_iValue		= iValue;
 
 	this->GetZONE()->SendPacketToSectors( this, pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -3003,7 +3050,7 @@ bool classUSER::Send_gsv_EQUIP_ITEM (short nEquipInvIDX, tagITEM *pEquipITEM)
 	}
 
 	this->GetZONE()->SendPacketToSectors( this, pCPacket );
-
+    Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -3054,16 +3101,12 @@ bool classUSER::Change_EQUIP_ITEM (short nEquipInvIDX, short nWeaponInvIDX)
 				}
 			} else {
 				// 빈 인벤토리가 없어서 장비를 벗을수 없다...
-				Packet_ReleaseNUnlock(pCPacket);
-
 				goto _RETURN;
 			}
 		} else {
 			#pragma COMPILE_TIME_MSG( "2004. 7. 16 4차 클베과정에서 몇몇 유저에게 나타나는 현상 임시로 ..." )
 			// IS_HACKING( this, "Change_EQUIP_ITEM-1" );	// 뭐냐 ???
 			// bResult = false;
-			Packet_ReleaseNUnlock(pCPacket);
-
 			goto _RETURN;
 		}
 	} else {
@@ -3075,11 +3118,7 @@ bool classUSER::Change_EQUIP_ITEM (short nEquipInvIDX, short nWeaponInvIDX)
 				// 왼손 무기를 탈거할 장비 인벤토리에 빈 공간이 1개 있어야 한다.
 				short nEmptyInvIDX = m_Inventory.GetEmptyInventory( INV_WEAPON );
 				if(nEmptyInvIDX < 0)
-				{
-					Packet_ReleaseNUnlock(pCPacket);
-
 					goto _RETURN;
-				}
 
 				// 왼손무기 인벤토리로...
 				tagITEM *pSubWPN = &m_Inventory.m_ItemLIST[ EQUIP_IDX_WEAPON_L ];
@@ -3166,6 +3205,7 @@ bool classUSER::Change_EQUIP_ITEM (short nEquipInvIDX, short nWeaponInvIDX)
 	}
 
 _RETURN :
+    Packet_ReleaseNUnlock( pCPacket );
 	this->InitPassiveSkill ();
 
 	return bResult;
@@ -3242,8 +3282,7 @@ bool classUSER::Recv_cli_ASSEMBLE_RIDE_ITEM( t_PACKET *pPacket )
 				this->ClearITEM( INVENTORY_RIDE_ITEM0+nEquipInvIDX );
 			} else {
 				// 빈 인벤토리가 없어서 장비를 벗을수 없다...
-				Packet_ReleaseNUnlock(pCPacket);
-				return bResult;
+				goto _RETURN;
 			}
 		} // else {
 		//	IS_HACKING( this, "Recv_cli_ASSEMBLE_RIDE_ITEM-1" );	// 뭐냐 ???
@@ -3276,8 +3315,6 @@ bool classUSER::Recv_cli_ASSEMBLE_RIDE_ITEM( t_PACKET *pPacket )
 		else {
 			IS_HACKING( this, "Recv_cli_ASSEMBLE_RIDE_ITEM-2" );	// 뭐냐 ???
 			bResult = false;
-			Packet_ReleaseNUnlock( pCPacket );
-
 			goto _RETURN;
 		}
 		*/
@@ -3287,6 +3324,7 @@ bool classUSER::Recv_cli_ASSEMBLE_RIDE_ITEM( t_PACKET *pPacket )
 		pCPacket->m_HEADER.m_wType = GSV_SET_INV_ONLY;
 		pCPacket->m_HEADER.m_nSize = sizeof( gsv_SET_INV_ONLY ) + pCPacket->m_gsv_SET_INV_ONLY.m_btItemCNT * sizeof( tag_SET_INVITEM );
 		this->SendPacket( pCPacket );
+		Packet_ReleaseNUnlock( pCPacket );
 
 		this->SetRideITEM( nEquipInvIDX );
 
@@ -3308,6 +3346,9 @@ bool classUSER::Recv_cli_ASSEMBLE_RIDE_ITEM( t_PACKET *pPacket )
 
 		this->GetZONE()->SendPacketToSectors( this, pCPacket );
 	}
+
+_RETURN :
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return bResult;
 }
@@ -3334,6 +3375,8 @@ bool classUSER::Send_gsv_SPEED_CHANGED (bool bUpdateSpeed)
 
 	this->GetZONE()->SendPacketToSectors( this, pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	// 파티원 한테는 max hp/con/recover_xx ... !!!
 	if ( this->GetPARTY() ) {
 		this->m_pPartyBUFF->Change_ObjectIDX( this );
@@ -3354,6 +3397,7 @@ bool classUSER::Send_gsv_STORE_TRADE_REPLY( BYTE btResult )
 	pCPacket->m_gsv_STORE_TRADE_REPLY.m_btRESULT = btResult;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -3426,8 +3470,7 @@ bool classUSER::Recv_cli_STORE_TRADE_REQ(t_PACKET *pPacket)
 		{
 			IS_HACKING(this, "Recv_cli_STORE_TRADE_REQ-2 :: Invalid Sell Items");
 			bResult = false;
-			Packet_ReleaseNUnlock(pCPacket);
-			return bResult;
+			goto _RETURN;
 		}
 
 		tagITEM *pITEM;
@@ -3437,8 +3480,7 @@ bool classUSER::Recv_cli_STORE_TRADE_REQ(t_PACKET *pPacket)
 			{
 				IS_HACKING(this, "Recv_cli_STORE_TRADE_REQ-2-2 :: Invalid inventory index");
 				bResult = false;
-				Packet_ReleaseNUnlock(pCPacket);
-				return bResult;
+				goto _RETURN;
 			}
 
 			pITEM = &m_Inventory.m_ItemLIST[pSellITEMs[nC].m_btInvIDX];
@@ -3450,8 +3492,7 @@ bool classUSER::Recv_cli_STORE_TRADE_REQ(t_PACKET *pPacket)
 					IS_HACKING(this, "Recv_cli_STORE_TRADE_REQ-3 :: Cant sell to store");
 					bResult = false;
 				}
-				Packet_ReleaseNUnlock(pCPacket);
-				return bResult;
+				goto _RETURN;
 			}
 
 			iPriceEA = this->GetZONE()->Get_ItemSellPRICE(*pITEM, this->GetSellSkillVALUE());
@@ -3472,7 +3513,7 @@ bool classUSER::Recv_cli_STORE_TRADE_REQ(t_PACKET *pPacket)
 #endif
 
 					this->ClearITEM(pSellITEMs[nC].m_btInvIDX);
-			}
+				}
 				else
 				{
 					this->GetZONE()->SellITEMs(pITEM, pSellITEMs[nC].m_wDupCNT);
@@ -3600,6 +3641,9 @@ bool classUSER::Recv_cli_STORE_TRADE_REQ(t_PACKET *pPacket)
 
 	this->SendPacket(pCPacket);
 
+_RETURN :
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return bResult;
 }
 
@@ -3619,6 +3663,7 @@ bool classUSER::Recv_cli_SET_HOTICON(t_PACKET *pPacket)
 		pCPacket->m_gsv_SET_HOTICON.m_HotICON = this->m_HotICONS.m_IconLIST[pPacket->m_cli_SET_HOTICON.m_btListIDX];
 
 		this->SendPacket(pCPacket);
+		Packet_ReleaseNUnlock(pCPacket);
 
 		return true;
 	}
@@ -3660,6 +3705,8 @@ bool classUSER::Send_gsv_SET_BULLET(BYTE btShotTYPE)
 
 	this->GetZONE()->SendPacketToSectors(this, pCPacket);
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -3680,8 +3727,6 @@ bool classUSER::Recv_cli_SET_BULLET( t_PACKET *pPacket )
 		tagITEM *pInvITEM = &m_Inventory.m_ItemLIST[pPacket->m_cli_SET_BULLET.m_wInventoryIDX];
 		if(0 == pInvITEM->GetHEADER())
 		{
-			Packet_ReleaseNUnlock(pCPacket);
-
 			goto _RETURN;
 		}
 		// 장착 위치가 맞는 소모탄인가 ???
@@ -3689,8 +3734,6 @@ bool classUSER::Recv_cli_SET_BULLET( t_PACKET *pPacket )
 		{
 			IS_HACKING(this, "Invalid bullet position");
 			bResult = false;
-			Packet_ReleaseNUnlock(pCPacket);
-
 			goto _RETURN;
 		}
 
@@ -3701,8 +3744,6 @@ bool classUSER::Recv_cli_SET_BULLET( t_PACKET *pPacket )
 			{
 				IS_HACKING(this, "bullet type must SHOT_TYPE_ARROW");
 				bResult = false;
-				Packet_ReleaseNUnlock(pCPacket);
-
 				goto _RETURN;
 			}
 			break;
@@ -3712,8 +3753,6 @@ bool classUSER::Recv_cli_SET_BULLET( t_PACKET *pPacket )
 			{
 				IS_HACKING(this, "bullet type must SHOT_TYPE_BULLET");
 				bResult = false;
-				Packet_ReleaseNUnlock(pCPacket);
-
 				goto _RETURN;
 			}
 			break;;
@@ -3726,8 +3765,6 @@ bool classUSER::Recv_cli_SET_BULLET( t_PACKET *pPacket )
 			default:
 				IS_HACKING(this, "bullet type must SHOT_TYPE_THROW");
 				bResult = false;
-				Packet_ReleaseNUnlock(pCPacket);
-
 				goto _RETURN;
 			}
 		}
@@ -3775,8 +3812,6 @@ bool classUSER::Recv_cli_SET_BULLET( t_PACKET *pPacket )
 		{
 			// 모두 소모됐는데 클라이언트에서는 남은것으로 오인... 삭제하라는 패킷 전송.
 			this->Send_gsv_SET_INV_ONLY(INVENTORY_SHOT_ITEM0 + pPacket->m_cli_SET_BULLET.m_wShotTYPE, pShotITEM);
-			Packet_ReleaseNUnlock(pCPacket);
-
 			goto _RETURN;
 		}
 
@@ -3795,8 +3830,6 @@ bool classUSER::Recv_cli_SET_BULLET( t_PACKET *pPacket )
 		else
 		{
 			// 빈 인벤토리가 없어서 총알 탈거 못함...
-			Packet_ReleaseNUnlock(pCPacket);
-
 			goto _RETURN;
 		}
 	}
@@ -3806,6 +3839,7 @@ bool classUSER::Recv_cli_SET_BULLET( t_PACKET *pPacket )
 	pCPacket->m_gsv_SET_INV_ONLY.m_btItemCNT = 2;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	{	// 로컬 변수 선언...
 
@@ -3819,6 +3853,7 @@ bool classUSER::Recv_cli_SET_BULLET( t_PACKET *pPacket )
 	}
 
 _RETURN :
+	Packet_ReleaseNUnlock( pCPacket );
 	return bResult;
 }
 
@@ -3844,6 +3879,7 @@ bool classUSER::Send_gsv_CREATE_ITEM_REPLY (BYTE btResult, short nStepORInvIDX, 
 	}
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -4152,6 +4188,7 @@ bool classUSER::Send_gsv_ITEM_RESULT_REPORT( BYTE btReport, BYTE btItemType, sho
 	
     this->GetZONE()->SendPacketToSectors( this, pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 /// 제조, 제련 결과 응답
@@ -4419,6 +4456,7 @@ bool classUSER::Pick_ITEM( CObjITEM *pITEM )
 		pCPacket->m_gsv_GET_FIELDITEM_REPLY.m_btResult = REPLY_GET_FIELDITEM_REPLY_TOO_MANY;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -4478,6 +4516,7 @@ bool classUSER::Recv_cli_GET_FIELDITEM_REQ( t_PACKET *pPacket )
 	pCPacket->m_gsv_GET_FIELDITEM_REPLY.m_btResult = btResult;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
     return true;
 }
@@ -4537,6 +4576,7 @@ bool classUSER::Recv_cli_MOVE_ZULY( t_PACKET *pPacket )
 	}
 
 _RETURN :
+	Packet_ReleaseNUnlock( pCPacket );
 	return bResult;
 }
 
@@ -4565,7 +4605,6 @@ bool classUSER::Recv_cli_MOVE_ITEM( t_PACKET *pPacket )
 			if ( !pPacket->m_cli_MOVE_ITEM.m_MoveITEM.IsEnableKEEPING() ) {
 				IS_HACKING(this, "Invalid keeping item");
 				bResult = false;
-				Packet_ReleaseNUnlock(pCPacket);
 				goto _RETURN;
 			}
 
@@ -4573,14 +4612,12 @@ bool classUSER::Recv_cli_MOVE_ITEM( t_PACKET *pPacket )
 				 pPacket->m_cli_MOVE_ITEM.m_btFromIDX >= INVENTORY_TOTAL_SIZE ) {
 				IS_HACKING(this, "Invalid keeping inventory index");
 				bResult = false;
-				Packet_ReleaseNUnlock(pCPacket);
 				goto _RETURN;
 			}
 
 			// 렉이 발생하여 같은 아이템을 두번 옮길경우 있을수 있다.
 			pSourITEM = &this->m_Inventory.m_ItemLIST[ pPacket->m_cli_MOVE_ITEM.m_btFromIDX ];
 			if ( pSourITEM->IsEmpty() ) {
-				Packet_ReleaseNUnlock(pCPacket);
 				goto _RETURN;		// bResult = true기때문에 짤리진 않는다.;
 			}
 
@@ -4588,7 +4625,6 @@ bool classUSER::Recv_cli_MOVE_ITEM( t_PACKET *pPacket )
 			if ( pSourITEM->GetHEADER() != pPacket->m_cli_MOVE_ITEM.m_MoveITEM.GetHEADER() ) {
 				IS_HACKING(this, "Difference keeping item");
 				bResult = false;
-				Packet_ReleaseNUnlock(pCPacket);
 				goto _RETURN;
 			}
 
@@ -4602,7 +4638,6 @@ bool classUSER::Recv_cli_MOVE_ITEM( t_PACKET *pPacket )
 				iDupCnt = pPacket->m_cli_MOVE_ITEM.m_MoveITEM.GetQuantity();
 				// 옮기려는 갯수가 더 많으면...
 				if ( iDupCnt > pSourITEM->GetQuantity() || iDupCnt > MAX_DUP_ITEM_QUANTITY ) {
-					Packet_ReleaseNUnlock(pCPacket);
 					goto _RETURN;	// bResult = true기때문에 짤리진 않는다.;
 
 				}
@@ -4611,7 +4646,6 @@ bool classUSER::Recv_cli_MOVE_ITEM( t_PACKET *pPacket )
 					g_pThreadLOG->When_ItemHACKING( this, pSourITEM, "ItemHACK" );
 					this->m_Inventory.m_i64Money = 0;
 					pSourITEM->Clear();
-					Packet_ReleaseNUnlock(pCPacket);
 					goto _RETURN;	// bResult = true기때문에 짤리진 않는다.;
 				}
 #ifdef	__INC_PLATINUM
@@ -4637,7 +4671,6 @@ bool classUSER::Recv_cli_MOVE_ITEM( t_PACKET *pPacket )
 			}
 			if ( this->GetCur_MONEY() < iFee ) {
 				// 보관료 없다.
-				Packet_ReleaseNUnlock(pCPacket);
 				goto _RETURN;		// bResult = true기때문에 짤리진 않는다.;
 			}
 
@@ -4703,7 +4736,6 @@ bool classUSER::Recv_cli_MOVE_ITEM( t_PACKET *pPacket )
 			// 꺼내 가는건 결제와 상관없다..
 			if ( pPacket->m_cli_MOVE_ITEM.m_btFromIDX >= BANKSLOT_TOTAL ) {
 				bResult = false;
-				Packet_ReleaseNUnlock(pCPacket);
 				goto _RETURN;
 			}
 			pSourITEM = &this->m_Bank.m_ItemLIST[ pPacket->m_cli_MOVE_ITEM.m_btFromIDX ];
@@ -4717,7 +4749,6 @@ bool classUSER::Recv_cli_MOVE_ITEM( t_PACKET *pPacket )
 			if ( pSourITEM->GetHEADER() != pPacket->m_cli_MOVE_ITEM.m_MoveITEM.GetHEADER() ) {
 				IS_HACKING(this, "Difference withdraw item");
 				bResult = false;
-				Packet_ReleaseNUnlock(pCPacket);
 				goto _RETURN;
 			}
 
@@ -4730,14 +4761,12 @@ bool classUSER::Recv_cli_MOVE_ITEM( t_PACKET *pPacket )
 					g_pThreadLOG->When_ItemHACKING( this, pSourITEM, "BankHACK" );
 					this->m_Inventory.m_i64Money = 0;
 					pSourITEM->Clear();
-					Packet_ReleaseNUnlock(pCPacket);
 					goto _RETURN;
 				}
 
 				// 옮기려는 갯수가 더 많으면...
 				if ( pPacket->m_cli_MOVE_ITEM.m_MoveITEM.GetQuantity() > pSourITEM->GetQuantity() ||
 					 pPacket->m_cli_MOVE_ITEM.m_MoveITEM.GetQuantity() > MAX_DUP_ITEM_QUANTITY ) {
-					Packet_ReleaseNUnlock(pCPacket);
 					goto _RETURN;
 				}
 			} else {
@@ -4784,6 +4813,8 @@ bool classUSER::Recv_cli_MOVE_ITEM( t_PACKET *pPacket )
 	}
 
 _RETURN :
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return bResult;
 }
 
@@ -4919,6 +4950,8 @@ bool classUSER::Recv_cli_USE_BPOINT_REQ( t_PACKET *pPacket )
     pCPacket->m_gsv_USE_BPOINT_REPLY.m_nAbilityValue = nAbilityValue;
 
 	this->SendPacket( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
 	if ( nCurSpeed != this->GetOri_RunSPEED() )  {
 		// 이동 속도가 바뀌므로 주변에 이동 속도 전송...
@@ -5162,6 +5195,9 @@ bool classUSER::Recv_cli_TRADE_P2P( t_PACKET *pPacket )
 				this->SendPacket( pCPacket1 );
 				pUSER->SendPacket( pCPacket2 );
 
+				Packet_ReleaseNUnlock( pCPacket1 );
+				Packet_ReleaseNUnlock( pCPacket2 );
+
 				this->m_btTradeBIT = this->m_iTradeUserIDX  = 0;
 				pUSER->m_btTradeBIT = pUSER->m_iTradeUserIDX = 0;
 
@@ -5306,6 +5342,7 @@ bool classUSER::Send_gsv_P_STORE_OPENED()
 	pCPacket->AppendString( this->m_szUserTITLE );
 
     this->GetZONE()->SendPacketToSectors( this, pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -5457,6 +5494,7 @@ bool classUSER::Recv_cli_P_STORE_CLOSE( t_PACKET *pPacket )
 	pCPacket->m_gsv_P_STORE_CLOSED.m_wObjectIDX = this->Get_INDEX();
 
     this->GetZONE()->SendPacketToSectors( this, pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	this->m_STORE.m_bActive = false;
 	this->m_IngSTATUS.ClearSubFLAG( FLAG_SUB_STORE_MODE );
@@ -5513,6 +5551,8 @@ bool classUSER::Recv_cli_P_STORE_LIST_REQ( t_PACKET *pPacket )
 		pCPacket->m_HEADER.m_nSize = sizeof( gsv_P_STORE_LIST_REPLY ) + sizeof(tagPS_SLOT_PRICE) * btItemCNT;
 
 		this->SendPacket( pCPacket );
+
+		Packet_ReleaseNUnlock( pCPacket );
 	} else 
 		return this->Send_gsv_P_STORE_RESULT( pPacket->m_cli_P_STORE_LIST_REQ.m_wStoreObjectIDX, RESULT_P_STORE_CANCLED );
 
@@ -5546,6 +5586,7 @@ bool classUSER::Send_gsv_P_STORE_RESULT( classPACKET *pCPacket, BYTE btResult )
 	pCPacket->m_gsv_P_STORE_RESULT.m_btResult = btResult;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -5564,6 +5605,8 @@ bool classUSER::Send_gsv_P_STORE_RESULT( WORD wObjectIDX, BYTE btResult )
 	pCPacket->m_gsv_P_STORE_RESULT.m_btResult = btResult;
 
 	this->SendPacket( pCPacket );
+
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -5691,6 +5734,8 @@ bool classUSER::Recv_cli_P_STORE_BUY_REQ( t_PACKET *pPacket )
 			pStoreOWNER->SendPacket( pStorePacket );
 		}
 		this->SendPacket( pStorePacket );
+
+		Packet_ReleaseNUnlock( pStorePacket );
 	} else {
 		return this->Send_gsv_P_STORE_RESULT( pPacket->m_cli_P_STORE_BUY_REQ.m_wStoreObjectIDX, RESULT_P_STORE_CANCLED );
 	}
@@ -5835,6 +5880,8 @@ bool classUSER::Recv_cli_P_STORE_SELL_REQ( t_PACKET *pPacket )
 			pStoreOWNER->SendPacket( pStorePacket );
 		}
 		this->SendPacket( pStorePacket );
+
+		Packet_ReleaseNUnlock( pStorePacket );
 	} else {
 		return this->Send_gsv_P_STORE_RESULT( pPacket->m_cli_P_STORE_BUY_REQ.m_wStoreObjectIDX, RESULT_P_STORE_CANCLED );
 	}
@@ -5892,6 +5939,8 @@ bool classUSER::Recv_cli_SKILL_LEVELUP_REQ ( t_PACKET *pPacket )
 	pCPacket->m_gsv_SKILL_LEVELUP_REPLY.m_nSkillPOINT = this->GetCur_SkillPOINT ();
 
 	this->SendPacket( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -6322,6 +6371,7 @@ bool classUSER::Send_gsv_QUEST_REPLY (BYTE btResult, BYTE btSlot, int iQuestID)
     pCPacket->m_gsv_QUEST_REPLY.m_iQuestID	  = iQuestID;
 
     this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -6440,6 +6490,8 @@ bool classUSER::Recv_cli_QUEST_DATA_REQ( t_PACKET *pPacket )
 	::CopyMemory( &pCPacket->m_gsv_QUEST_DATA_REPLY.m_Quest, &this->m_Quests.m_QUEST[ pPacket->m_cli_QUEST_DATA_REQ.m_btQuestSLOT ], sizeof( CQUEST ) );
 
 	this->SendPacket( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -6635,6 +6687,7 @@ bool classUSER::Recv_cli_APPRAISAL_REQ( t_PACKET *pPacket )
 	}
 
     this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	if ( pPacket->m_cli_APPRAISAL_REQ.m_wInventoryIndex < MAX_EQUIP_IDX /* || pPacket->m_cli_APPRAISAL_REQ.m_wInventoryIndex >= INVENTORY_RIDE_ITEM0 */ ) {
 		// TODO:: PAT아이템은 ??
@@ -6783,6 +6836,7 @@ bool classUSER::Send_gsv_SET_ITEM_LIFE (short nInvIDX, short nLife)
 	pCPacket->m_gsv_SET_ITEM_LIFE.m_nLife = nLife;
 
 	this->SendPacket( pCPacket );
+    Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -6884,6 +6938,7 @@ bool classUSER::Send_gsv_CRAFT_ITEM_RESULT (BYTE btRESULT)
 		pCPacket->m_gsv_CRAFT_ITEM_REPLY.m_btRESULT = btRESULT;
 
 		this->SendPacket( pCPacket );
+	    Packet_ReleaseNUnlock( pCPacket );
 
 		return true;
 	}
@@ -6913,6 +6968,7 @@ void classUSER::Send_gsv_CRAFT_ITEM_REPLY( classPACKET *pCPacket, BYTE btRESULT,
 	pCPacket->m_gsv_CRAFT_ITEM_REPLY.m_btOutCNT = btOutCNT;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 /// 재밍 요청
@@ -7408,7 +7464,7 @@ bool classUSER::Recv_mon_SERVER_LIST_REQ( t_PACKET *pPacket )
 	pCPacket->m_srv_SERVER_LIST_REPLY.m_nServerCNT  = 0;
 
 	this->Send_Start( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -7427,7 +7483,7 @@ bool classUSER::Recv_mon_SERVER_STATUS_REQ( t_PACKET *pPacket )
 	pCPacket->m_wls_SERVER_STATUS_REPLY.m_iUserCNT = g_pUserLIST->Get_AccountCNT();
 
 	this->Send_Start( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -7478,6 +7534,8 @@ bool classUSER::Recv_ost_SERVER_ZONEANNOUNCE( t_PACKET *pPacket )
 	CZoneTHREAD * pAnnounceZONE = g_pZoneLIST->GetZONE( pPacket->m_ost_SERVER_ZONEANNOUNCE.m_nZoneNO );
 	pAnnounceZONE->SendPacketToZONE( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -7519,6 +7577,7 @@ bool  classUSER::Send_gsv_SERVER_USERLOGOUT_REPLY( const char * szAccount , bool
 
 	this->SendPacket( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 
 }
@@ -7565,6 +7624,8 @@ bool  classUSER::Send_gsv_SERVER_USERINFO_REPLY( const char * szACCOUNT, classUS
 		pCPacket->AppendString( pUSER->Get_ACCOUNT() );
 	}
 	this->SendPacket( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -7627,6 +7688,8 @@ bool  classUSER::Send_gsv_SERVER_CHGUSER_REPLY( classUSER * pUSER, DWORD dwSTATU
 	pCPacket->m_gsv_SERVER_CHGUSER_REPLY.m_dwCMD = dwResCMD;
 	this->SendPacket( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -7675,6 +7738,7 @@ bool  classUSER::Send_gsv_SERVER_ZONEINFO_REPLY( void )
 
 	this->SendPacket( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -7742,6 +7806,7 @@ bool classUSER::Send_gsv_SERVER_MOVECHR_REPLY( classUSER * pUSER, short nZoneNO,
 	pCPacket->AppendString( pUSER->Get_ACCOUNT() );
 
 	SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -7789,6 +7854,8 @@ bool classUSER::Send_gsv_SERVER_IPSEARCH_REPLY( classUSER * pUSER )
 	}
 
 	SendPacket( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -7893,6 +7960,7 @@ bool classUSER::Send_srv_ERROR ( WORD wErrCODE )
 	
 	this->SendPacket( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 /// 네트웍 연결 상태 확인 
@@ -7986,6 +8054,8 @@ bool classUSER::Send_wsv_CLAN_COMMAND( BYTE btCMD, ... )
 //	}
 //#endif
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -8003,6 +8073,7 @@ bool classUSER::Send_gsv_BILLING_MESSAGE( BYTE btMsgType, char *szMsg )
 	pCPacket->AppendString( szMsg);
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	if ( ( btMsgType & 0x0ff ) < 0x0f ) {
 		// 과금 타입이다.
@@ -8036,6 +8107,7 @@ bool classUSER::Send_gsv_BILLING_MESSAGE_EXT( WORD wMsgType, DWORD dwPayType, DW
 	}
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -8053,6 +8125,7 @@ bool classUSER::Send_gsv_BILLING_MESSAGE2( BYTE btType, char cFunctionType, DWOR
 	pCPacket->m_gsv_BILLING_MESSAGE2.m_dwPayFlag= dwPayFlag;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 	
 	return true;
 }
@@ -8151,6 +8224,7 @@ bool  classUSER::Send_gsv_SCREEN_SHOT_TIME()
 	pCPacket->m_gsv_SCREEN_SHOT_TIME.btMin = sysTime.wMinute;
 
 	this->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -8694,6 +8768,7 @@ bool classUSER::Recv_cli_UPDATE_NAME( t_PACKET *pPacket )
 
 	this->GetZONE()->SendPacketToZONE( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -8721,6 +8796,7 @@ bool classUSER::Send_wsv_RESULT_CLAN_SET (char *szClanName)
 			pCPacket->AppendString( szClanName );
 		this->GetZONE()->SendPacketToSectors( this, pCPacket );
 
+		Packet_ReleaseNUnlock( pCPacket );
 		return true;
 	}
 	return false;
@@ -8845,7 +8921,9 @@ bool classUSER::Send_gsv_CART_RIDE( BYTE btType, WORD wSourObjIdx, WORD wDestObj
 		this->GetZONE()->SendPacketToSectors( this, pCPacket );
 	else
 		this->SendPacket( pCPacket );
-		*/
+
+	Packet_ReleaseNUnlock( pCPacket );
+	*/
 
 	return true;
 }
@@ -8864,7 +8942,7 @@ bool classUSER::Recv_Done (tagIO_DATA *pRecvDATA)
 
     m_csRecvQ.Lock ();
     {
-        m_RecvList.emplace(pRecvDATA);
+        m_RecvList.AppendNode( pRecvDATA->m_pNODE );
     }
 	m_csRecvQ.Unlock ();
 
@@ -8918,11 +8996,11 @@ int  classUSER::ProcLogOUT()
 	// 취소 패킷이 왔는가 ????
 	m_csRecvQ.Lock();
 	{
-		tagIO_DATA *pRecvNODE = m_RecvList.front().get();
+		classDLLNODE<tagIO_DATA> *pRecvNODE = m_RecvList.GetHeadNode();
 
 		while(pRecvNODE)
 		{
-			t_PACKETHEADER *pPacket = (t_PACKETHEADER*)pRecvNODE->m_pCPacket->m_pDATA;
+			t_PACKETHEADER *pPacket = (t_PACKETHEADER*)pRecvNODE->DATA.m_pCPacket->m_pDATA;
 			do
 			{
 				short const nTotalPacketLEN = this->D_RecvB(pPacket);
@@ -8940,18 +9018,20 @@ int  classUSER::ProcLogOUT()
 					this->m_btWishLogOutMODE = 0;
 					this->m_dwTimeToLogOUT = 0;
 
-					m_RecvList.pop();
+					m_RecvList.DeleteNode( pRecvNODE );
+					this->Free_RecvIODATA( &pRecvNODE->DATA );
 					m_csRecvQ.Unlock();
 					return 1;
 				}
 
-				pRecvNODE->m_dwIOBytes -= nTotalPacketLEN;
+				pRecvNODE->DATA.m_dwIOBytes -= nTotalPacketLEN;
 				pPacket = (t_PACKETHEADER*)(pPacket->m_pDATA + nTotalPacketLEN);
-			} while(pRecvNODE->m_dwIOBytes);
+			} while(pRecvNODE->DATA.m_dwIOBytes);
 
-			m_RecvList.pop();
-			pRecvNODE = m_RecvList.front().get();
-		}
+			m_RecvList.DeleteNode( pRecvNODE );
+			this->Free_RecvIODATA( &pRecvNODE->DATA );
+			pRecvNODE = m_RecvList.GetHeadNode ();
+		} // while(pRecvNODE)
 	}
 	m_csRecvQ.Unlock();
 
@@ -9003,11 +9083,11 @@ int	 classUSER::Proc(void)
 
 	m_csRecvQ.Lock();
 	{
-		tagIO_DATA *pRecvNODE = m_RecvList.front().get();
+		classDLLNODE<tagIO_DATA> *pRecvNODE = m_RecvList.GetHeadNode();
 
 		while(pRecvNODE)
 		{
-			t_PACKETHEADER *pPacket = (t_PACKETHEADER*)pRecvNODE->m_pCPacket->m_pDATA;
+			t_PACKETHEADER *pPacket = (t_PACKETHEADER*)pRecvNODE->DATA.m_pCPacket->m_pDATA;
 			do
 			{
 				short const nTotalPacketLEN = this->D_RecvB(pPacket);
@@ -9024,19 +9104,20 @@ int	 classUSER::Proc(void)
 				{
 				case RET_SKIP_PROC:
 				{
-					pRecvNODE->m_dwIOBytes -= nTotalPacketLEN;
+					pRecvNODE->DATA.m_dwIOBytes -= nTotalPacketLEN;
 
-					if(0 == pRecvNODE->m_dwIOBytes)
+					if(0 == pRecvNODE->DATA.m_dwIOBytes)
 					{
 						// 다처리된 패킷...
-						m_RecvList.pop();
+						m_RecvList.DeleteNode( pRecvNODE );
+						this->Free_RecvIODATA( &pRecvNODE->DATA );
 					}
 					else
 					{
 						pPacket = (t_PACKETHEADER*)(pPacket->m_pDATA + nTotalPacketLEN);
 						// 처리하고 남은 부분 다음에 처리 할수 있도록...
-						for(WORD wI = 0; wI < pRecvNODE->m_dwIOBytes; wI++)
-							pRecvNODE->m_pCPacket->m_pDATA[wI] = pPacket->m_pDATA[wI];
+						for(WORD wI = 0; wI < pRecvNODE->DATA.m_dwIOBytes; wI++)
+							pRecvNODE->DATA.m_pCPacket->m_pDATA[wI] = pPacket->m_pDATA[wI];
 					}
 					m_csRecvQ.Unlock();
 					return 1;
@@ -9049,13 +9130,14 @@ int	 classUSER::Proc(void)
 				}
 				} // switch ( this->Proc_ZonePACKET( (t_PACKET*)pPacket ) )
 
-				pRecvNODE->m_dwIOBytes -= nTotalPacketLEN;
+				pRecvNODE->DATA.m_dwIOBytes -= nTotalPacketLEN;
 				pPacket = (t_PACKETHEADER*)(pPacket->m_pDATA + nTotalPacketLEN);
-			} while(pRecvNODE->m_dwIOBytes);
+			} while(pRecvNODE->DATA.m_dwIOBytes);
 
-			m_RecvList.pop();
-			pRecvNODE = m_RecvList.front().get();
-		}
+			m_RecvList.DeleteNode(pRecvNODE);
+			this->Free_RecvIODATA(&pRecvNODE->DATA);
+			pRecvNODE = m_RecvList.GetHeadNode ();
+		} // while(pRecvNODE)
 	}
 
 	m_csRecvQ.Unlock();
@@ -9151,6 +9233,7 @@ bool  classUSER::Send_gsv_CHARSTATE_CHANGE( DWORD dwFLAG )
 
 	this->GetZONE()->SendPacketToSectors( this, pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 

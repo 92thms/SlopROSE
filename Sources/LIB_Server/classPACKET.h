@@ -2,21 +2,23 @@
 #define __CLASSPACKET_H
 
 #include "PacketHEADER.h"
-
-#ifndef __POINTF
-#define __POINTF
-struct tPOINTF
-{
-	float m_fX;
-	float m_fY;
-};
-#endif
-
-#include "net_prototype.h"
+#include "CPacketCODEC.h"
 
 struct tagIO_DATA;
+#ifdef	__T_PACKET
 class classPACKET : public t_PACKET
 {
+#else
+class classPACKET
+{
+public:
+	union
+	{
+		t_PACKETHEADER m_HEADER;
+		BYTE m_pDATA[MAX_PACKET_SIZE];
+	};
+#endif
+
 private:
 	long m_lRefCnt;
 	WORD m_wPacketLEN;

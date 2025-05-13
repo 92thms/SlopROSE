@@ -10,6 +10,8 @@
 #include "classHASH.h"
 #include "classSTR.h"
 #include "classSYNCOBJ.h"
+#include "DLLIST.h"
+#include "CDLList.h"
 #include "classTIME.h"
 #include "ioDataPOOL.h"
 
@@ -43,6 +45,7 @@ public:
 		m_Socket = INVALID_SOCKET;
 		m_bWritable = true;
 		m_bVerified = false;
+		m_pSockNODE = NULL;
 	}
 
 	SOCKET Get_SOCKET()
@@ -91,20 +94,17 @@ public:
 		return pPacket->m_nSize;
 	}
 
-	tagIO_DATA *Alloc_RecvIODATA(void)
+	classDLLNODE<tagIO_DATA> *Alloc_RecvIODATA(void)
 	{
-		tagIO_DATA *pRecvDATA = new tagIO_DATA{};
+		classDLLNODE<tagIO_DATA> *pRecvDATA;
+
+		pRecvDATA = CPoolRECVIO::GetInstance()->Pool_Alloc();
 		if(pRecvDATA)
 		{
 			//ZeroMemory(&pRecvDATA->m_Overlapped, sizeof(OVERLAPPED));
 			// 2003. 11. 12 반드시 0으로 초기화 !!!, 빼먹어서 Recv_Start에서 기존의 쓰레기 패킷 뒤에 추가로 받아졌다.
-			pRecvDATA->m_dwIOBytes = 0;
-
-			pRecvDATA->m_IOmode = ioREAD;
-			pRecvDATA->m_pCPacket = Packet_AllocNLock();
-
-			int const refCount = pRecvDATA->m_pCPacket->GetRefCnt();
-			_ASSERT(refCount == 1);
+			CPoolRECVIO::GetInstance()->InitData(pRecvDATA);
+			pRecvDATA->DATA.m_pCPacket = CPoolPACKET::GetInstance()->AllocNLock();
 		}
 
 		return pRecvDATA;
@@ -112,48 +112,46 @@ public:
 
 	static void Free_RecvIODATA(tagIO_DATA *pRecvDATA)
 	{
-		/*assert(pRecvDATA->m_pCPacket->GetRefCnt() == 1);
+		assert(pRecvDATA->m_pCPacket->GetRefCnt() == 1);
 
-		delete pRecvDATA->m_pCPacket;*/
-		delete pRecvDATA;
+		CPoolPACKET::GetInstance()->ReleaseOnly(pRecvDATA->m_pCPacket);
+		CPoolRECVIO::GetInstance()->Pool_Free(pRecvDATA->m_pNODE);
 	}
 
-	void PopRecvIO(tagIO_DATA *pIODATA)
-	{
-		assert(m_RecvList.front().get() == pIODATA);
-
-		m_RecvList.pop();
-	}
-
-	tagIO_DATA *Alloc_SendIODATA(classPACKET *pCPacket)
+	classDLLNODE<tagIO_DATA> *Alloc_SendIODATA(classPACKET *pCPacket)
 	{
 		if(0 == pCPacket->GetLength())
 		{
 			pCPacket->SetLength(this->E_SendP(&pCPacket->m_HEADER));
 		}
 
-		tagIO_DATA *pSendDATA = new tagIO_DATA;
+		classDLLNODE<tagIO_DATA> *pSendDATA;
+		pSendDATA = CPoolSENDIO::GetInstance()->Pool_Alloc();
 		if(nullptr != pSendDATA)
 		{
-			ZeroMemory(&pSendDATA->m_Overlapped, sizeof(OVERLAPPED));
+			//ZeroMemory(&pSendDATA->m_Overlapped, sizeof(OVERLAPPED));
 			// 2003. 11. 12 반드시 0으로 초기화 !!!, 빼먹어서 Recv_Start에서 기존의 쓰레기 패킷 뒤에 추가로 받아졌다.
-			pSendDATA->m_dwIOBytes = 0;
+			//pSendDATA->m_dwIOBytes = 0;
 
-			pSendDATA->m_IOmode = ioWRITE;
-			pSendDATA->m_pCPacket = pCPacket;
+			//pSendDATA->m_IOmode = ioWRITE;
+			//pSendDATA->m_pCPacket = pCPacket;
+			CPoolSENDIO::GetInstance()->InitData(pSendDATA);
+			pSendDATA->DATA.m_pCPacket = pCPacket;
 
-			assert(pSendDATA->m_IOmode == ioWRITE);
-			assert(pSendDATA->m_dwIOBytes == 0);
+			pCPacket->IncRefCnt();
+
+			assert(pSendDATA->DATA.m_IOmode == ioWRITE);
+			assert(pSendDATA->DATA.m_dwIOBytes == 0);
 		}
 		return pSendDATA;
 	}
 
 	static void  Free_SendIODATA(tagIO_DATA *pSendDATA)
 	{
-		if(pSendDATA->m_pCPacket->DecRefCnt() <= 0)
-			delete pSendDATA->m_pCPacket;
+		// pSendDATA->m_pCPacket->m_pIOData = pSendDATA;
 
-		delete pSendDATA;
+		CPoolPACKET::GetInstance()->DecRefCount(pSendDATA->m_pCPacket);
+		CPoolSENDIO::GetInstance()->Pool_Free(pSendDATA->m_pNODE);
 	}
 
 public:
@@ -163,6 +161,7 @@ public:
 	t_HASHKEY	m_HashKeyIP;
 
 	bool		m_bVerified;						// 맞는 클라이언트에서 접속된거냐 ??
+	CDLList<iocpSOCKET*>::tagNODE *m_pSockNODE;
 	DWORD		m_dwConnTIME;						// 접속된 시간
 
 private:
@@ -176,28 +175,12 @@ protected:
 	CCriticalSection			m_csSendQ;
 	CCriticalSection			m_csRecvQ;
 
-	struct SendDeleter
-	{
-		void operator()(tagIO_DATA *ptr)
-		{
-			Free_SendIODATA(ptr);
-		}
-	};
-
-	struct RecvDeleter
-	{
-		void operator()(tagIO_DATA *ptr)
-		{
-			Free_RecvIODATA(ptr);
-		}
-	};
-
 	// Client에게 보낼 데이타 리스트.
-	std::queue<std::unique_ptr<tagIO_DATA, SendDeleter>> m_SendList;
+	classDLLIST<tagIO_DATA> m_SendList;
 	bool m_bWritable; // WriteFile에 보낼수 있냐 ?
 
 	// Client에서 받은 데이타 리스트.
-	std::queue<std::unique_ptr<tagIO_DATA, RecvDeleter>> m_RecvList;
+	classDLLIST<tagIO_DATA> m_RecvList;
 	DWORD m_dwCheckTIME; // 마지막 보내기 시도한 시간
 };
 #endif

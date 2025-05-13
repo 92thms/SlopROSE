@@ -24,8 +24,8 @@ IOCPSocketSERVER::IOCPSocketSERVER(
 	, m_ServerName()
 	, m_pAcceptTHREAD(nullptr)
 	, m_ppWorkerTHREAD(nullptr)
-	, sockets()
-	, lastSocket(0)
+	, m_pSocketIDX(nullptr)
+	, m_SocketLIST()
 	, m_bManageSocketVerify(bManageSocketVerify)
 {
 	m_ServerName.Set( szName );
@@ -50,10 +50,14 @@ IOCPSocketSERVER::~IOCPSocketSERVER ()
 	m_IOCP.ClosePort ();
 }
 
-bool IOCPSocketSERVER::Active(int iListenTCPPortNO, int iKeepAliveSec)
+bool IOCPSocketSERVER::Active(int iListenTCPPortNO, DWORD dwMaxSocketCount, int iKeepAliveSec)
 {
-	if ( !m_IOCP.GetHANDLE() || allSockets.size() )
+	if ( !m_IOCP.GetHANDLE() || m_pSocketIDX )
 		return false;
+
+	m_pSocketIDX = new CIndexARRAY< iocpSOCKET* >( "IOCPSocketIDX", dwMaxSocketCount );
+	m_pSocketIDX->ClearAll ();
+	m_dwMaxSocketCNT = dwMaxSocketCount;
 
 	this->StartWORKER ();
 	this->StartACCEPT (iListenTCPPortNO, iKeepAliveSec);
@@ -63,9 +67,13 @@ bool IOCPSocketSERVER::Active(int iListenTCPPortNO, int iKeepAliveSec)
 
 void IOCPSocketSERVER::ShutdownSOCKET()
 {
-	for(auto &socketKVP : allSockets)
+	// 모든 소켓 종료...
+	if(m_pSocketIDX)
 	{
-		Del_SOCKET(socketKVP.first);
+		for(DWORD dwI = 0; dwI < m_dwMaxSocketCNT; dwI++)
+			this->Del_SOCKET(dwI);
+
+		SAFE_DELETE( m_pSocketIDX );
 	}
 }
 
@@ -74,11 +82,12 @@ void IOCPSocketSERVER::StartACCEPT(int iListenTCPPortNO, int iKeepAliveSec)
 	if(NULL == m_pAcceptTHREAD)
 	{
 		m_pAcceptTHREAD = new IOCPSocketAcceptTHREAD(this);                // suspend mode
-		if(!m_pAcceptTHREAD->Init(iListenTCPPortNO, iKeepAliveSec))
+		/*if(!m_pAcceptTHREAD->Init(iListenTCPPortNO, iKeepAliveSec))
 		{
 			SAFE_DELETE(m_pAcceptTHREAD);
 			return;// false;
-		}
+		}*/
+		m_pAcceptTHREAD->Init(iListenTCPPortNO, iKeepAliveSec);
 		m_pAcceptTHREAD->Resume();
 	}
 }
@@ -88,6 +97,7 @@ void IOCPSocketSERVER::ShutdownACCEPT()
 	if(m_pAcceptTHREAD)
 	{
 		m_pAcceptTHREAD->Free();
+		// ShutdownACCEPT()를 호출한 쓰레드와 m_pAcceptTHREAD가 틀린 쓰래드 인데.. Free에서 종료되기 전에는 리턴 안됨
 		SAFE_DELETE(m_pAcceptTHREAD);
 	}
 }
@@ -153,35 +163,48 @@ void IOCPSocketSERVER::ShutdownWORKER()
 
 void IOCPSocketSERVER::CloseIdleSCOKET(DWORD dwIdleMilliSec)
 {
-	DWORD dwCurTime = ::timeGetTime();
+	DWORD dwCurTime = ::timeGetTime();	// classTIME::GetCurrentAbsMilliSecond ();
+	CDLList<iocpSOCKET*>::tagNODE *pNode, *pDelNode;
 
 	this->Lock();
 	{
-		for(auto const &socketKVP : sockets)
+		pNode = this->m_SocketLIST.GetHeadNode();
+		while(pNode)
 		{
-			auto const &socket = socketKVP.second;
-
-			if(socket->m_bVerified)
+			if(pNode->m_VALUE->m_bVerified)
 			{
-				Del_SOCKET(socketKVP.first);
+				// 검증된 클라이언트 소켓이다.
+				pNode->m_VALUE->m_pSockNODE = NULL;
+				pDelNode = pNode;
+				pNode = pDelNode->GetNext();
+				this->m_SocketLIST.DeleteNFree(pDelNode);
 				continue;
 			}
 
-			if(dwCurTime - socket->m_dwConnTIME >= dwIdleMilliSec)
+			if(dwCurTime - pNode->m_VALUE->m_dwConnTIME >= dwIdleMilliSec)
 			{
-				g_LOG.CS_ODS(
-					0xffff,
-					"Close Idle SOCK:: %s:%d=%d-%d, %s\n",
-					GetServerNAME(),
-					dwCurTime - socket->m_dwConnTIME,
-					dwCurTime,
-					socket->m_dwConnTIME,
-					socket->Get_IP());
+				// 짤라 ??? ...
+				// if ( pNode->m_VALUE->OnIdelCLOSE() )
+				{
+					g_LOG.CS_ODS(
+						0xffff,
+						"Close Idle SOCK:: %s:%d=%d-%d, %s\n",
+						GetServerNAME(),
+						dwCurTime - pNode->m_VALUE->m_dwConnTIME,
+						dwCurTime,
+						pNode->m_VALUE->m_dwConnTIME,
+						pNode->m_VALUE->Get_IP());
 
-				//socket->CloseSocket();
+					pNode->m_VALUE->CloseSocket();
+					pNode->m_VALUE->m_pSockNODE = NULL;
 
-				Del_SOCKET(socketKVP.first);
+					pDelNode = pNode;
+					pNode = pDelNode->GetNext ();
+					this->m_SocketLIST.DeleteNFree( pDelNode );
+					continue;
+				}
 			}
+			pNode = pNode->GetNext ();
 		}
 	}
 	this->Unlock();
@@ -198,14 +221,19 @@ bool IOCPSocketSERVER::New_SOCKET(SOCKET hSocket, sockaddr_in &SockADDR)
 
 	pSOCKET->Init_SCOKET();
 	this->Lock();
-	int completionKey = lastSocket.fetch_add(1) + 1;
+		int iSocketIDX = this->m_pSocketIDX->AddData(pSOCKET);
 	this->Unlock();
+	if(0 == iSocketIDX)
+	{
+		this->FreeClientSOCKET(pSOCKET);
+		return false;
+	}
 
 	pSOCKET->m_Socket = hSocket;
 	pSOCKET->m_IP.Set(szIP);
 	pSOCKET->m_HashKeyIP = ipHashKEY;
 
-	if(!m_IOCP.LinkPort((HANDLE)hSocket, completionKey)
+	if(!m_IOCP.LinkPort((HANDLE)hSocket, iSocketIDX)
 		|| eRESULT_PACKET_OK != pSOCKET->Recv_Start())
 	{
 		this->Lock();
@@ -213,7 +241,7 @@ bool IOCPSocketSERVER::New_SOCKET(SOCKET hSocket, sockaddr_in &SockADDR)
 			// @버그 수정 : 2004. 7. 16 iSocketIDX대신
 			// pSOCKET->m_iSocketIDX로 사용했던 실수가 있었음.
 			// 아미 메모리 풀이 중복 해제되는 원인으루 추정됨...
-			lastSocket.fetch_sub(1);
+			m_pSocketIDX->DelData(iSocketIDX);
 			// lock 외부에 있던거 안으로...
 			// Shutdown함수호출시에서 Accept, Worker쓰레드가 종료되어 Free..함수가 호출될경우
 			// ShutdownSocket과 충돌...
@@ -226,31 +254,20 @@ bool IOCPSocketSERVER::New_SOCKET(SOCKET hSocket, sockaddr_in &SockADDR)
 		return false;
 	}
 
-	g_LOG.CS_ODS(0xffff, "Made new socket: %p, completion key: %d\n", pSOCKET, completionKey);
+	g_LOG.CS_ODS(0xffff, "Made new socket: %p, completion key: %d\n", pSOCKET, iSocketIDX);
 
 	if(m_bManageSocketVerify)
 	{
-		pSOCKET->m_dwConnTIME = ::timeGetTime();
+		pSOCKET->m_dwConnTIME = ::timeGetTime();	// classTIME::GetCurrentAbsMilliSecond ();
 
 		this->Lock();
 		{
-			sockets.emplace(completionKey, pSOCKET);
+			pSOCKET->m_pSockNODE = this->m_SocketLIST.AllocNAppend(pSOCKET);
 		}
 		this->Unlock();
 	}
 
-	this->Lock();
-	{
-		auto deleter = [this](iocpSOCKET *socket)
-		{
-			FreeClientSOCKET(socket);
-		};
-		decltype(allSockets)::value_type::second_type ptr(pSOCKET, deleter);
-		allSockets.emplace(completionKey, std::move(ptr));
-	}
-	this->Unlock();
-
-	pSOCKET->m_iSocketIDX = completionKey;
+	pSOCKET->m_iSocketIDX = iSocketIDX;
 	this->InitClientSOCKET(pSOCKET);
 
 	return true;
@@ -259,25 +276,31 @@ bool IOCPSocketSERVER::New_SOCKET(SOCKET hSocket, sockaddr_in &SockADDR)
 // IOCPSocketSERVER::ShutdownSOCKET()
 // IOCPSocketSERVER::On_FALSE()
 // IOCPSocketSERVER::On_TRUE() 에서 호출됨
-void IOCPSocketSERVER::Del_SOCKET(int iSocketIDX)
+iocpSOCKET *IOCPSocketSERVER::Del_SOCKET(int iSocketIDX)
 {
+	iocpSOCKET *pSOCKET;
+
 	this->Lock();
 	{
-		auto it = allSockets.find(iSocketIDX);
-		if(it != allSockets.end())
+		pSOCKET = this->GetSOCKET(iSocketIDX);
+		if(pSOCKET)
 		{
-			auto &socket = it->second;
-			sockets.erase(socket->m_iSocketIDX);
-			socket->m_iSocketIDX = 0;
-			socket->CloseSocket();
-			allSockets.erase(it);
-		}
-		else
-		{
-			g_LOG.CS_ODS(0xffff, "Unable to delete socket: %d.\n", iSocketIDX);
+			if(pSOCKET->m_pSockNODE)
+			{
+				this->m_SocketLIST.DeleteNFree(pSOCKET->m_pSockNODE);
+				pSOCKET->m_pSockNODE = NULL;
+			}
+			m_pSocketIDX->DelData(iSocketIDX);
+			pSOCKET->m_iSocketIDX = 0;
+			pSOCKET->CloseSocket();
+
+			// 위에 소켓 버퍼를 먼저 0으루 만들고 호출되어함..순서 주의 !!!!
+			this->ClosedClientSOCKET(pSOCKET);
 		}
 	}
 	this->Unlock();
+
+	return pSOCKET;
 }
 
 // 소켓 종료..
@@ -289,15 +312,12 @@ void IOCPSocketSERVER::On_FALSE(LPOVERLAPPED lpOverlapped, DWORD dwCompletionKey
 	{
 	case ioREAD:
 		// ioWRITE 일경우에는 pUSER->m_SendList에 노드가 이미 등록되어 있어 SubUser()에서 풀림으로 ioREAD일 때만...
-		//iocpSOCKET::Free_RecvIODATA(pIOData);
-		if(allSockets.size())
-			allSockets[lastSocket]->PopRecvIO(pIOData);
+		iocpSOCKET::Free_RecvIODATA(pIOData);
 		break;
 	case ioWRITE:
 		break;
 	default:
-		//assert(false);
-		;
+		assert(false);
 	}
 
 	this->Del_SOCKET(dwCompletionKey);

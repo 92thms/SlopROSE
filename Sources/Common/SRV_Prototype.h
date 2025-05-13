@@ -6,6 +6,8 @@
 #define	MAX_PARTY_MEMBERS		7
 #define	MAX_PARTY_LEVEL			50
 
+// 월드 서버 최대 접속 가능자
+#define	MAX_WORLD_USER_UBFF			65535
 // 존 서버 최대 접속 가능자.
 #define	MAX_ZONE_USER_BUFF			8192
 

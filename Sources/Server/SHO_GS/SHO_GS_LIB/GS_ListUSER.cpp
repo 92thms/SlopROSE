@@ -191,6 +191,8 @@ void CUserLIST::Check_SocketALIVE ()
 			pUserNODE = m_NullZoneLIST.GetNextNode( pUserNODE );
 		}
 	m_csNullZONE.Unlock ();
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -209,6 +211,8 @@ void CUserLIST::Send_wsv_CREATE_CHAR (int iSocketIDX, BYTE btResult)
 	pCPacket->m_wsv_CREATE_CHAR.m_btResult = btResult;
 
 	this->SendPacketToSocketIDX( iSocketIDX, pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -228,6 +232,8 @@ void CUserLIST::Send_wsv_MEMO (int iSocketIDX, BYTE btTYPE, short nMemoCNT)
 		pCPacket->m_HEADER.m_nSize = sizeof( wsv_MEMO );
 
 	this->SendPacketToSocketIDX( iSocketIDX, pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -246,6 +252,8 @@ void CUserLIST::Send_wsv_GUILD_COMMAND (int iSocketIDX, BYTE btResult, char *szS
 	//	pCPacket->AppendString( szStr );
 
 	//this->SendPacketToSocketIDX( iSocketIDX, pCPacket );
+
+	//Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -325,7 +333,6 @@ bool CUserLIST::Add_ACCOUNT (int iSocketIDX, t_PACKET *pRecvPket, char *szAccoun
 #endif
 			// this->m_dwLoginTIME = pRecvPket->m_wls_CONFIRM_ACCOUNT_REPLY.m_dwLoginTIME;
 
-			// insert hash table ...
 			m_csHashACCOUNT.Lock ();
 			m_pHashACCOUNT->Insert( pUSER->m_HashACCOUNT, pUSER );
 			::IncUserCNT( m_pHashACCOUNT->GetCount(), pUSER );
@@ -459,6 +466,7 @@ void CUserLIST::Send_zws_ACCOUNT_LIST (CClientSOCKET *pSrvSocket, bool bSendToGU
 
 			if ( pCPacket->m_HEADER.m_nSize >= MAX_PACKET_SIZE - 100 ) {
 				pSrvSocket->Packet_Register2SendQ( pCPacket );
+				Packet_ReleaseNUnlock( pCPacket );
 
 				pCPacket = Packet_AllocNLock ();
 				pCPacket->m_HEADER.m_wType = ZWS_ACCOUNT_LIST;
@@ -474,6 +482,8 @@ void CUserLIST::Send_zws_ACCOUNT_LIST (CClientSOCKET *pSrvSocket, bool bSendToGU
 	if ( 0 != pCPacket->m_zws_ACCOUNT_LIST.m_nAccountCNT ) {
 		pSrvSocket->Packet_Register2SendQ( pCPacket );
 	}
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 void CUserLIST::Send_cli_STRESS_TEST ( classPACKET *pCPacket )

@@ -50,6 +50,17 @@ classListBLOCK<tagBlockDATA>    *g_pListServerIP=NULL;
 #define	DEF_SERVER_POOL_SIZE	256
 #define	INC_SERVER_POOL_SIZE	128
 
+
+#define	DEF_RECV_IO_POOL_SIZE		( DEF_CLIENT_POOL_SIZE + INC_CLIENT_POOL_SIZE )
+#define	INC_RECV_IO_POOL_SIZE		( INC_CLIENT_POOL_SIZE )
+
+#define	DEF_SEND_IO_POOL_SIZE		( DEF_CLIENT_POOL_SIZE + INC_CLIENT_POOL_SIZE )
+#define	INC_SEND_IO_POOL_SIZE		( INC_CLIENT_POOL_SIZE )
+
+#define	DEF_PACKET_POOL_SIZE		( DEF_RECV_IO_POOL_SIZE + DEF_SEND_IO_POOL_SIZE )
+#define	INC_PACKET_POOL_SIZE		( INC_CLIENT_POOL_SIZE )
+
+
 #define	JOIN_HASH_TABLE_SIZE		4096
 #define WAIT_HASH_TABLE_SIZE		512
 
@@ -102,6 +113,10 @@ void SHO_LS::SystemINIT( HINSTANCE hInstance )
 	g_pPacketCODEC = new CPacketCODEC;
 	//g_pPacketCODEC->Default ();
 	g_pPacketCODEC->Init( PACKET_SEED );
+
+	CPoolPACKET::Instance (DEF_PACKET_POOL_SIZE,	INC_PACKET_POOL_SIZE );
+	CPoolRECVIO::Instance (DEF_RECV_IO_POOL_SIZE,	INC_RECV_IO_POOL_SIZE);
+	CPoolSENDIO::Instance (DEF_SEND_IO_POOL_SIZE,	INC_SEND_IO_POOL_SIZE);
 
 	g_pListCLIENT = new CLS_ListCLIENT( DEF_CLIENT_POOL_SIZE, INC_CLIENT_POOL_SIZE );
 	g_pListSERVER = new CLS_ListSERVER( DEF_SERVER_POOL_SIZE, INC_SERVER_POOL_SIZE );
@@ -174,6 +189,13 @@ SHO_LS::~SHO_LS ()
 	if ( CSocketWND::GetInstance() )
 		CSocketWND::GetInstance()->Destroy();
 
+//	CBS_Taiwan::Destroy();
+//	g_pTwainBS = NULL;
+
+	CPoolRECVIO::Destroy ();
+	CPoolSENDIO::Destroy ();
+	CPoolPACKET::Destroy ();
+
 	SAFE_DELETE( g_pPacketCODEC );
 }
 
@@ -187,7 +209,7 @@ bool SHO_LS::StartClientSOCKET (int iClientListenPort, int iLimitUserCNT, BYTE b
 	::CopyMemory( m_btMD5, btMD5, 32 );
 
 	m_iClientListenPortNO = iClientListenPort;
-	g_pListCLIENT->Active( m_iClientListenPortNO, 3*60 );	// 동시 접속 소켓 갯수 65535. 접속유지 체크 3분
+	g_pListCLIENT->Active( m_iClientListenPortNO, 65535, 3 * 60 );	// 동시 접속 소켓 갯수 65535. 접속유지 체크 3분
 	this->SetLimitUserCNT ( iLimitUserCNT );
 
 	return true;
@@ -272,7 +294,7 @@ bool SHO_LS::StartServerSOCKET(
 	g_dwStartTIME = classTIME::GetCurrentAbsSecond();
 
 	m_iServerListenPortNO = iServerListenPort;
-	g_pListSERVER->Active( m_iServerListenPortNO, 60 );	// 동시 접속 소켓 갯수 1024. 접속유지 체크 1분
+	g_pListSERVER->Active( m_iServerListenPortNO, 1024, 60 );	// 동시 접속 소켓 갯수 1024. 접속유지 체크 1분
 
 	m_pTIMER = new CTimer( hMainWND, LS_TIMER_CHECK_WAIT_LIST, LS_TICK_CHECK_WAIT_LIST, (TIMERPROC)LS_TimerProc );
 	m_pTIMER->Start ();

@@ -190,6 +190,8 @@ bool CLS_Server::Send_str_PACKET (WORD wType, char *szString)
 
 	this->Send_Start( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
     return true;
 }
 
@@ -293,6 +295,8 @@ bool CLS_Server::Send_wls_CONFIRM_ACCOUNT_REPLY (BYTE btResult, DWORD dwLSID, DW
         pCPacket->AppendString( szAccount );
 
 	this->Send_Start( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
     return true;
 }

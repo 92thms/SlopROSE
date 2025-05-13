@@ -831,6 +831,7 @@ bool CZoneTHREAD::AddObjectToSector (CGameOBJ *pObj, BYTE btUpdateFLAG)
             }
         }
     }
+    Packet_ReleaseNUnlock( pCPacket );
 
     m_ppSECTOR[ pObj->m_PosSECTOR.y ][ pObj->m_PosSECTOR.x ].InsToSEC( pObj );
 
@@ -870,6 +871,7 @@ void CZoneTHREAD::SubObjectFromSector (CGameOBJ *pObj, char cUpdateFLAG)
             }
         }
     }
+    Packet_ReleaseNUnlock( pCPacket );
 }
 
 //-------------------------------------------------------------------------------------------------

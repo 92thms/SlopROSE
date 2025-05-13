@@ -59,6 +59,9 @@
     <ClCompile Include="iocpSocketSERVER.cpp">
       <Filter>Source Files\IOCPSocketServer</Filter>
     </ClCompile>
+    <ClCompile Include="ioDataPOOL.cpp">
+      <Filter>Source Files\IOCP</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="blockLIST.h">

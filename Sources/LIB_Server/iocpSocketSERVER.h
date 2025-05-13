@@ -11,6 +11,7 @@
 #include "classINDEX.h"
 #include "classIOCP.h"
 #include "classTIME.h"
+#include "CSLList.h"
 #include "iocpSOCKET.h"
 
 class IOCPSocketAcceptTHREAD;
@@ -26,9 +27,9 @@ protected:
 	IOCPSocketAcceptTHREAD *m_pAcceptTHREAD;
 	IOCPSocketWorkerTHREAD**m_ppWorkerTHREAD;
 
-	std::unordered_map<int, std::unique_ptr<iocpSOCKET, std::function<void(iocpSOCKET*)>>> allSockets;
-	std::unordered_map<int, iocpSOCKET*> sockets;
-	std::atomic_int lastSocket;
+	CIndexARRAY< iocpSOCKET* >		*m_pSocketIDX;
+
+	CDLList<iocpSOCKET*>			 m_SocketLIST;
 	bool m_bManageSocketVerify;
 
 public	:
@@ -57,25 +58,26 @@ public	:
 	}
 
 	inline iocpSOCKET* GetSOCKET( int iSocketIDX )		
-	{	
-		auto const it = allSockets.find(iSocketIDX);
-		if ( it != allSockets.cend() )
-			return it->second.get();
+	{
+		if(m_pSocketIDX)
+			return m_pSocketIDX->GetData(iSocketIDX);
 		return nullptr;
 	}
 
 	bool New_SOCKET (SOCKET hSocket, sockaddr_in &SockADDR);
-	void Del_SOCKET ( int iSocketIDX );
+	iocpSOCKET *Del_SOCKET(int iSocketIDX);
 
 	void On_TRUE (LPOVERLAPPED lpOverlapped, DWORD dwCompletionKey, DWORD dwBytesIO);
 	void On_FALSE(LPOVERLAPPED lpOverlapped, DWORD dwCompletionKey);
 
 	int  GetUsedSocketCNT()		
 	{	
-		return sockets.size();
+		if ( m_pSocketIDX )
+			return m_pSocketIDX->GetUsedSlotCNT();
+		return 0;
 	}
 	// 모든 쓰레드 동작...
-	bool Active (int iListenTCPPortNO, int iKeepAliveSec);
+	bool Active (int iListenTCPPortNO, DWORD dwMaxSocketCount, int iKeepAliveSec);
 	void Shutdown ()
 	{
 		this->ShutdownACCEPT ();

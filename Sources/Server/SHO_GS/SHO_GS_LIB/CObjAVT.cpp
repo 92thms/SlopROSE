@@ -733,6 +733,8 @@ bool CObjAVT::Send_gsv_GODDNESS_MODE( BYTE btOnOff )
 
 	this->GetZONE()->SendPacketToSectors( this, pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 

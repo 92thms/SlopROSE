@@ -222,7 +222,7 @@ bool CParty::SendWhisperToPartyMembers( char *szMessage )
 	pCPacket->AppendString( szMessage );
 
 	this->SendToPartyMembers( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -350,6 +350,8 @@ bool CParty::SendPartyLEVnEXP (classUSER *pUSER, BYTE bitLevelUP)
 	else
 		pUSER->SendPacket( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -471,6 +473,8 @@ bool CParty::Change_ObjectIDX (classUSER *pUSER)
 
 	this->SendToPartyMembersExceptME( pUSER, pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -505,6 +509,8 @@ bool CParty::Change_PartyOWNER (classUSER *pNewOWNER, BYTE btReply)
 	pCPacket->m_gsv_PARTY_REPLY.m_dwFromIDXorTAG = pNewOWNER->Get_INDEX();
 
 	this->SendToPartyMembers( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -590,6 +596,7 @@ bool CParty::Send_PartyUserLIST( classUSER *pUSER, DWORD dwUserTAG )
 	this->Unlock ();
 
 	pUSER->SendPacket( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -638,6 +645,7 @@ BYTE CParty::Add_PartyUSER (classUSER *pUSER)
 		pCPacket->AppendString( pUSER->Get_NAME() );
 
 		this->SendToPartyMembers( pCPacket );
+		Packet_ReleaseNUnlock( pCPacket );
 
 #ifdef	__USE_ARRAY_PARTY_USER
 		tagPartyUSER *pPU = new tagPartyUSER;
@@ -738,6 +746,7 @@ bool CParty::Sub_PartyUSER( short nPartyPOS )
 		pCPacket->m_gsv_PARTY_MEMBER.m_dwObjectTAG[ 1 ] = dwOwnerID;//pOwnerNODE->m_VALUE.m_pUSER->m_dwDBID;
 
 		this->SendToPartyMembers( pCPacket );
+		Packet_ReleaseNUnlock( pCPacket );
 	}
 
 	return true;
@@ -784,6 +793,7 @@ bool CParty::Send_gsv_PARTY_ITEM (classUSER *pPicker, CObjITEM *pItemOBJ)
 
 	this->SendToPartyMembersExceptME( pPicker, pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -829,6 +839,7 @@ bool CParty::Send_gsv_PARTY_REPLY2Members (	BYTE btReply, DWORD dwFromIDXorTAG )
 	pCPacket->m_gsv_PARTY_REPLY.m_dwFromIDXorTAG = dwFromIDXorTAG;
 
 	this->SendToPartyMembers( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -869,6 +880,7 @@ bool CParty::Send_gsv_CHECK_NPC_EVENT( classUSER *pTryOBJ, short nNpcIDX )
 	}
 	this->Unlock ();
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -911,6 +923,7 @@ void CParty::Set_PartyRULE( BYTE btRULE )
 	pCPacket->m_gsv_PARTY_RULE.m_btPartyRULE = btRULE;
 
 	this->SendToPartyMembers( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 void CParty::Warp_USERS(int iZoneNO, tPOINTF &PosGOTO)
@@ -927,4 +940,5 @@ void CParty::Warp_USERS(int iZoneNO, tPOINTF &PosGOTO)
 	pCPacket->m_gsv_RELAY_REQ.m_PosCALL		= PosGOTO;
 
 	this->SendToPartyMembers( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 }

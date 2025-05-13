@@ -57,24 +57,41 @@ void iocpSOCKET::CloseSocket(void)
 
 void iocpSOCKET::Clear_LIST(void)
 {
+	classDLLNODE<tagIO_DATA> *pNode;
+
 	m_csRecvQ.Lock();
 	{
-		while(!m_RecvList.empty())
-			m_RecvList.pop();
+		pNode = m_RecvList.GetHeadNode();
+		while(pNode)
+		{
+			m_RecvList.DeleteNode( pNode );
+			this->Free_RecvIODATA( &pNode->DATA );
+
+			pNode = m_RecvList.GetHeadNode();
+		}
 	}
 	m_csRecvQ.Unlock();
 
 	m_csSendQ.Lock();
 	{
-		while(!m_SendList.empty())
-			m_SendList.pop();
+		pNode = m_SendList.GetHeadNode();
+		while(pNode)
+		{
+			m_SendList.DeleteNode( pNode );
+			this->Free_SendIODATA ( &pNode->DATA );
+
+			pNode = m_SendList.GetHeadNode();
+		}
 	}
 	m_csSendQ.Unlock();
 }
 
+//-------------------------------------------------------------------------------------------------
 // pRecvNode에 이어 받기.
-ePacketRECV iocpSOCKET::Recv_Continue(tagIO_DATA *pRecvDATA)
+ePacketRECV iocpSOCKET::Recv_Continue (tagIO_DATA *pRecvDATA)
 {
+	assert(pRecvDATA->m_pCPacket->GetRefCnt() == 1);
+
 	if(0 == ::ReadFile(
 		(HANDLE)m_Socket,
 		&pRecvDATA->m_pCPacket->m_pDATA[pRecvDATA->m_dwIOBytes],
@@ -104,27 +121,20 @@ ePacketRECV iocpSOCKET::Recv_Continue(tagIO_DATA *pRecvDATA)
 // 새로 받기.
 ePacketRECV iocpSOCKET::Recv_Start (void)
 {
-	ePacketRECV ret = ePacketRECV::eRESULT_PACKET_DISCONNECT;
-	m_csRecvQ.Lock();
-	{
-		tagIO_DATA *pRecvNODE = this->Alloc_RecvIODATA();
-		if(NULL == pRecvNODE)
-			return eRESULT_PACKET_DISCONNECT;
+	classDLLNODE<tagIO_DATA> *pRecvNODE;
 
-		assert(pRecvNODE->m_IOmode == ioREAD);
-		assert(pRecvNODE->m_dwIOBytes == 0);
+	pRecvNODE = this->Alloc_RecvIODATA();
+	if(NULL == pRecvNODE)
+		return eRESULT_PACKET_DISCONNECT;
 
-		m_RecvList.emplace(pRecvNODE);
+	assert(pRecvNODE->DATA.m_IOmode == ioREAD);
+	assert(pRecvNODE->DATA.m_dwIOBytes == 0);
 
-		ret = this->Recv_Continue(m_RecvList.front().get());
-	}
-	m_csRecvQ.Unlock();
-
-	return ret;
+	return this->Recv_Continue( &pRecvNODE->DATA );
 }
 
 // CThreadWORKER::STATUS_ReturnTRUE () 에서만 호출된다.
-ePacketRECV iocpSOCKET::Recv_Complete(tagIO_DATA *pRecvDATA)
+ePacketRECV iocpSOCKET::Recv_Complete (tagIO_DATA *pRecvDATA)
 {
 	ePacketRECV eResult;
 
@@ -137,9 +147,7 @@ ePacketRECV iocpSOCKET::Recv_Complete(tagIO_DATA *pRecvDATA)
 		assert(0 == pRecvDATA->m_pCPacket->GetLength());
 		// 최소 크기의 패킷 받기...
 		eResult = this->Recv_Continue(pRecvDATA);	// 이어 받기.
-		g_LOG.CS_ODS(0xffff, "Unlocking socket...\n");
-		this->UnlockSOCKET();
-		return eResult;
+		goto _JUMP_RETURN;
 	}
 
 	if(0 == pRecvDATA->m_pCPacket->GetLength())
@@ -156,16 +164,15 @@ ePacketRECV iocpSOCKET::Recv_Complete(tagIO_DATA *pRecvDATA)
 
 			g_LOG.CS_ODS(0xffff, "Unlocking socket...\n");
 			this->UnlockSOCKET();
-			assert(pRecvDATA == m_RecvList.front().get());
-			m_RecvList.pop();
-			//this->Free_RecvIODATA(pRecvDATA);
+
+			this->Free_RecvIODATA(pRecvDATA);
 
 			return eRESULT_PACKET_DISCONNECT;
 		}
 	}
 
 	//재영추가.... 한번에 많은 패킷이 들어오면 끊어버린다..
-	if(pRecvDATA->m_pCPacket->GetLength() > MAX_PACKET_SIZE)
+	/*if(pRecvDATA->m_pCPacket->GetLength() > MAX_PACKET_SIZE)
 	{
 		// 블랙 리스트에 ip 등록...
 		g_LOG.CS_ODS(
@@ -180,12 +187,13 @@ ePacketRECV iocpSOCKET::Recv_Complete(tagIO_DATA *pRecvDATA)
 		//this->Free_RecvIODATA(pRecvDATA);
 
 		return eRESULT_PACKET_DISCONNECT;
-	}
+	}*/
 
 	assert( pRecvDATA->m_pCPacket->GetLength() >= sizeof(t_PACKETHEADER) );
+
 	// 2006.06.13/김대성/수정 - 해커가 고의로 pRecvDATA->m_pCPacket->GetLength() < sizeof(t_PACKETHEADER) 인 패킷을 보낼경우
 	// 서버가 멈추는 것을 막기위해서 _ASSERT() 대신 에러리턴
-	if(pRecvDATA->m_pCPacket->GetLength() < sizeof(t_PACKETHEADER))
+	/*if(pRecvDATA->m_pCPacket->GetLength() < sizeof(t_PACKETHEADER))
 	{
 		g_LOG.CS_ODS(0xffff, "Unlocking socket...\n");
 		this->UnlockSOCKET();
@@ -196,25 +204,20 @@ ePacketRECV iocpSOCKET::Recv_Complete(tagIO_DATA *pRecvDATA)
 		// 블랙 리스트에 ip 등록...
 		g_LOG.CS_ODS(0xffff, "*** ERROR: pRecvDATA->m_pCPacket->GetLength() < sizeof(t_PACKETHEADER), IP[ %s ]\n", this->m_IP.Get());
 		return eRESULT_PACKET_DISCONNECT;
-	}
+	}*/
 
 	if((short)pRecvDATA->m_dwIOBytes < pRecvDATA->m_pCPacket->GetLength())
 	{
 		eResult = this->Recv_Continue(pRecvDATA);	// 이어 받기.
+		goto _JUMP_RETURN;
+	}
+	else if((short)pRecvDATA->m_dwIOBytes == pRecvDATA->m_pCPacket->GetLength())
+	{
 		g_LOG.CS_ODS(0xffff, "Unlocking socket...\n");
 		this->UnlockSOCKET();
-		return eResult;
-	}
-	else
-	{
-		if((short)pRecvDATA->m_dwIOBytes == pRecvDATA->m_pCPacket->GetLength())
-		{
-			g_LOG.CS_ODS(0xffff, "Unlocking socket...\n");
-			this->UnlockSOCKET();
-			if(!this->Recv_Done(pRecvDATA))		// Free_RecvIODATA( pRecvDATA ); <-- Recv_done에서 호출되어옴
-				return eRESULT_PACKET_DISCONNECT;//false;
-			return this->Recv_Start();	// RecvComplete
-		}
+		if(!this->Recv_Done(pRecvDATA))		// Free_RecvIODATA( pRecvDATA ); <-- Recv_done에서 호출되어옴
+			return eRESULT_PACKET_DISCONNECT;//false;
+		return this->Recv_Start();	// RecvComplete
 	}
 
 	// 뭉쳐온 패킷 분리.
@@ -235,9 +238,8 @@ ePacketRECV iocpSOCKET::Recv_Complete(tagIO_DATA *pRecvDATA)
 			{
 				g_LOG.CS_ODS(0xffff, "Unlocking socket...\n");
 				this->UnlockSOCKET();
-				assert(pRecvDATA == m_RecvList.front().get());
-				m_RecvList.pop();
-				//this->Free_RecvIODATA(pRecvDATA);
+
+				this->Free_RecvIODATA(pRecvDATA);
 				g_LOG.CS_ODS(0xffff, "*** ERROR: Decode recv packet header2, IP[ %s ]\n", this->m_IP.Get());
 
 				// 블랙 리스트에 ip 등록...
@@ -266,35 +268,37 @@ ePacketRECV iocpSOCKET::Recv_Complete(tagIO_DATA *pRecvDATA)
 	}
 
 	// 모자란 부분을 다시 읽어들일 데이타 생성.
-	tagIO_DATA *pNewNODE = this->Alloc_RecvIODATA();
+	classDLLNODE<tagIO_DATA> *pNewNODE;
+	pNewNODE = this->Alloc_RecvIODATA();
 	if(pNewNODE)
 	{
 		if(nRemainBytes >= sizeof(t_PACKETHEADER))
 		{
 			// Header가 Decoding 되었다..
-			pNewNODE->m_pCPacket->SetLength(this->P_Length(pHEADER));
+			pNewNODE->DATA.m_pCPacket->SetLength(this->P_Length(pHEADER));
 		}
-		pNewNODE->m_dwIOBytes = nRemainBytes;
-		::CopyMemory(pNewNODE->m_pCPacket->m_pDATA, pHEADER, nRemainBytes);
+
+		pNewNODE->DATA.m_dwIOBytes = nRemainBytes;
+		::CopyMemory(pNewNODE->DATA.m_pCPacket->m_pDATA, pHEADER, nRemainBytes);
 
 		// 앞부분의 완성 패킷등록.
 		pRecvDATA->m_dwIOBytes -= nRemainBytes;
-
-		m_RecvList.emplace(pNewNODE);
 
 		g_LOG.CS_ODS(0xffff, "Unlocking socket...\n");
 		this->UnlockSOCKET();
 		if(!this->Recv_Done(pRecvDATA))
 		{
 			// 2003. 11. 04 밑에 함수 추가... 빼먹어서 메모리 흘렸었음..
-			this->Free_RecvIODATA(pNewNODE);
+			this->Free_RecvIODATA(&pNewNODE->DATA);
 			return eRESULT_PACKET_DISCONNECT;//false;
 		}
-		return this->Recv_Continue(pNewNODE);	    			// 이어 받기.
+
+		return this->Recv_Continue(&pNewNODE->DATA);	    			// 이어 받기.
 	}
 
 	eResult = eRESULT_PACKET_DISCONNECT;//false;
 
+_JUMP_RETURN:
 	g_LOG.CS_ODS(0xffff, "Unlocking socket...\n");
 	this->UnlockSOCKET();
 	return eResult;
@@ -303,11 +307,13 @@ ePacketRECV iocpSOCKET::Recv_Complete(tagIO_DATA *pRecvDATA)
 // pSendNode에 이어 보내기.
 bool iocpSOCKET::Send_Continue(tagIO_DATA *pSendDATA)
 {
-	assert( pSendDATA->m_pCPacket->GetLength() > pSendDATA->m_dwIOBytes );
+	// 2004. 10. 25 아래 assert 걸림...
+	// assert( pSendDATA->m_pCPacket->GetLength() > pSendDATA->m_dwIOBytes );
 	if(pSendDATA->m_dwIOBytes >= pSendDATA->m_pCPacket->GetLength())
 	{
 		g_LOG.CS_ODS(
-			0xffff, ">>ERROR:: Sending packet: Len: %d, completed: %d, IP:%s\n",
+			0xffff,
+			">>ERROR:: Sending packet: Len: %d, completed: %d, IP:%s\n",
 			pSendDATA->m_pCPacket->GetLength(),
 			pSendDATA->m_dwIOBytes,
 			Get_IP());
@@ -350,53 +356,56 @@ bool iocpSOCKET::Send_Start(classPACKET *pCPacket)
 	if(m_Socket == INVALID_SOCKET)
 		return false;
 
-	tagIO_DATA *pSendNODE = this->Alloc_SendIODATA(pCPacket);
+	classDLLNODE<tagIO_DATA> *pSendNODE;
+	pSendNODE = this->Alloc_SendIODATA( pCPacket );
 	if(NULL == pSendNODE)
 		return false;
 
-	assert(pSendNODE->m_pCPacket->GetRefCnt() >= 1);
-	assert(pSendNODE->m_pCPacket == pCPacket);
-	assert(pSendNODE->m_IOmode == ioWRITE);
-	assert(pSendNODE->m_dwIOBytes == 0);
+	assert(pSendNODE->DATA.m_pCPacket->GetRefCnt() >= 1);
+	assert(pSendNODE->DATA.m_pCPacket == pCPacket);
+	assert(pSendNODE->DATA.m_IOmode == ioWRITE);
+	assert(pSendNODE->DATA.m_dwIOBytes == 0);
 
-	assert(pSendNODE->m_pCPacket->GetLength() >= sizeof(t_PACKETHEADER));
-	assert(pSendNODE->m_pCPacket->GetLength() <= MAX_PACKET_SIZE);
+	assert(pSendNODE->DATA.m_pCPacket->GetLength() >= sizeof(t_PACKETHEADER));
+	assert(pSendNODE->DATA.m_pCPacket->GetLength() <= MAX_PACKET_SIZE);
 
 	m_csSendQ.Lock();
 	{
-		m_SendList.emplace(pSendNODE);
+		m_SendList.AppendNode(pSendNODE);
 
 		if(m_bWritable)
 		{
-			pSendNODE = m_SendList.back().get();
-			if(!Send_Continue(pSendNODE))
-			{
-				m_csSendQ.Unlock();
-				CloseSocket();
-				return false;
-			}
-		}
-		else
-		{
-			size_t const iQedCnt = m_SendList.size();
-			if(iQedCnt > 100)
-			{
-				// 보내기 시도한 후 아직까지 다음 패킷을 보내지 못하고 있는넘...
-				// 패킷을 쌓놓고 있다면 짤라버려야지...
-				DWORD dwPassTime = ::timeGetTime() - this->m_dwCheckTIME;
-				if(dwPassTime >= 30 * 1000 || iQedCnt > 1000)
-				{
-					g_LOG.CS_ODS(
-						0xffff,
-						">>Sending timeout: packet: %d, time: %d, IP:%s\n",
-						iQedCnt,
-						dwPassTime,
-						this->Get_IP());
+			pSendNODE = m_SendList.GetHeadNode();
 
+			if(!Send_Continue(&pSendNODE->DATA))
+			{
+				{
 					m_csSendQ.Unlock();
 					CloseSocket();
-
 					return false;
+				}
+			}
+			else
+			{
+				int iQedCnt = m_SendList.GetNodeCount();
+				if(iQedCnt > 100)
+				{
+					// 보내기 시도한 후 아직까지 다음 패킷을 보내지 못하고 있는넘...
+					// 패킷을 쌓놓고 있다면 짤라버려야지...
+					DWORD dwPassTime = ::timeGetTime() - this->m_dwCheckTIME;
+					if(dwPassTime >= 30 * 1000 || iQedCnt > 1000)
+					{
+						g_LOG.CS_ODS(
+							0xffff,
+							">>Sending timeout: packet: %d, time: %d, IP:%s\n",
+							iQedCnt,
+							dwPassTime,
+							this->Get_IP());
+
+						CloseSocket();
+
+						//return false;
+					}
 				}
 			}
 		}
@@ -435,37 +444,39 @@ bool iocpSOCKET::Send_Complete(tagIO_DATA *pSendDATA)
 			// ** 아래 라인에서 m_SendList에서 pSendNode를 삭제하는 과정에서
 			//    오류가 난것은 pUSER가 이미 접속종료되어 ClearIOList() 함수를
 			//    실행하여 m_SendList가 이미 비어있기 때문이다.
-			tagIO_DATA *pHeadNODE = m_SendList.front().get();
-			assert(pHeadNODE == pSendDATA);
+			classDLLNODE<tagIO_DATA> *pHeadNODE = m_SendList.GetHeadNode();
+			assert(pHeadNODE == pSendDATA->m_pNODE);
 
-			m_SendList.pop();
+			classDLLNODE<tagIO_DATA> *pNextNODE = m_SendList.GetNextNode(pHeadNODE);
+			if(pNextNODE)
+				assert(pNextNODE->DATA.m_dwIOBytes == 0);
 
-			tagIO_DATA *pSendNODE = m_SendList.size() > 0 ? m_SendList.front().get() : nullptr;
+			m_SendList.DeleteNode(pSendDATA->m_pNODE);
+			this->Free_SendIODATA(pSendDATA);
+
+			classDLLNODE<tagIO_DATA> *pSendNODE = m_SendList.GetHeadNode();
 			if(pSendNODE)
 			{
-				assert(pSendNODE->m_dwIOBytes == 0);
+				assert(pSendNODE->DATA.m_dwIOBytes == 0);
 
-				if(!this->Send_Continue(pSendNODE))
+				if(!this->Send_Continue(&pSendNODE->DATA))
 				{
 					m_csSendQ.Unlock();
 					return false;
 				}
 			}
 		}
+		else if(pSendDATA->m_dwIOBytes < pSendDATA->m_pCPacket->GetLength()) // 부분 전송됨..
+		{
+			if(!this->Send_Continue(pSendDATA))
+			{
+				m_csSendQ.Unlock();
+				return false;
+			}
+		}
 		else
 		{
-			if(pSendDATA->m_dwIOBytes < pSendDATA->m_pCPacket->GetLength()) // 부분 전송됨..
-			{
-				if(!this->Send_Continue(pSendDATA))
-				{
-					m_csSendQ.Unlock();
-					return false;
-				}
-			}
-			else
-			{
-				assert(false);
-			}
+			assert(false);
 		}
 	}
 	m_csSendQ.Unlock();
@@ -476,7 +487,7 @@ bool iocpSOCKET::Send_Complete(tagIO_DATA *pSendDATA)
 bool iocpSOCKET::Recv_Done(tagIO_DATA *pRecvDATA)
 {
 	// 바로 처리하는 함수...
-	assert(pRecvDATA == m_RecvList.front().get());
+	//assert(pRecvDATA == m_RecvList.front().get());
 	t_PACKETHEADER *pPacket = (t_PACKETHEADER*)&pRecvDATA->m_pCPacket->m_pDATA;
 
 	do
@@ -491,8 +502,7 @@ bool iocpSOCKET::Recv_Done(tagIO_DATA *pRecvDATA)
 				"*** ERROR: Decode recv packet body, IP[ %s ]\n",
 				this->m_IP.Get());
 
-			m_RecvList.pop();
-			//this->Free_RecvIODATA(pRecvDATA);
+			this->Free_RecvIODATA(pRecvDATA);
 
 			// 블랙 리스트에 ip 등록...
 
@@ -501,8 +511,7 @@ bool iocpSOCKET::Recv_Done(tagIO_DATA *pRecvDATA)
 
 		if(!this->HandlePACKET(pPacket))
 		{
-			m_RecvList.pop();
-			//this->Free_RecvIODATA(pRecvDATA);
+			this->Free_RecvIODATA(pRecvDATA);
 			return false;
 		}
 
@@ -510,8 +519,7 @@ bool iocpSOCKET::Recv_Done(tagIO_DATA *pRecvDATA)
 		pPacket = (t_PACKETHEADER*)(pPacket->m_pDATA + nTotalPacketLEN);
 	} while(pRecvDATA->m_dwIOBytes);
 
-	m_RecvList.pop();
-	//this->Free_RecvIODATA(pRecvDATA);
+	this->Free_RecvIODATA(pRecvDATA);
 
 	return true;
 }

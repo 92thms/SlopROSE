@@ -170,6 +170,7 @@
     <ClCompile Include="CurlTHREAD.cpp" />
     <ClCompile Include="iocpSOCKET.cpp" />
     <ClCompile Include="iocpSocketSERVER.cpp" />
+    <ClCompile Include="ioDataPOOL.cpp" />
     <ClCompile Include="ipLIST.cpp" />
     <ClCompile Include="IP_Addr.cpp" />
   </ItemGroup>

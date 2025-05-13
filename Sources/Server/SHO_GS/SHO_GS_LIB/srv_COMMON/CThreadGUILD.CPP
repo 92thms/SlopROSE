@@ -87,6 +87,7 @@ bool CClan::Send_MemberSTATUS( CClanUSER *pClanUser, BYTE btResult )
 
 	this->SendPacketToMEMBER( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 //-------------------------------------------------------------------------------------------------
@@ -310,6 +311,8 @@ void CClan::SetJOBnLEV( t_HASHKEY HashCHAR, char *szCharName, short nJob, short 
 					pCPacket->AppendString( szCharName );
 
 					this->SendPacketToMEMBER( pCPacket );
+
+					Packet_ReleaseNUnlock( pCPacket );
 				}
 
 				this->Unlock ();
@@ -685,6 +688,7 @@ void CClan::SendRoster( int iSenderSockIDX )
 
 			if ( pCPacket->m_HEADER.m_nSize >= MAX_PACKET_SIZE - 34 ) {
 				g_pUserLIST->SendPacketToSocketIDX( iSenderSockIDX, pCPacket );
+				Packet_ReleaseNUnlock( pCPacket );
 
 				pCPacket = Packet_AllocNLock ();
 				if ( !pCPacket )
@@ -702,6 +706,7 @@ void CClan::SendRoster( int iSenderSockIDX )
 	if ( pCPacket && pCPacket->m_HEADER.m_nSize > sizeof( wsv_CLAN_COMMAND ) ) {
 		g_pUserLIST->SendPacketToSocketIDX( iSenderSockIDX, pCPacket );
 	}
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 void CClan::SendPacketToMEMBER (classPACKET *pCPacket)
@@ -749,6 +754,7 @@ bool CClan::Send_wsv_CLAN_COMMAND ( BYTE btCMD, ... )
 
 	this->SendPacketToMEMBER( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -770,6 +776,7 @@ bool CClan::SetClanMARK( BYTE *pMarkData, short nDataLen, WORD wMarkCRC16, CWS_C
 
 		pReqUSER->SendPacket( pCPacket );
 
+		Packet_ReleaseNUnlock( pCPacket );
 		return false;
 	}
 	
@@ -813,6 +820,7 @@ bool CClan::SetClanMARK( BYTE *pMarkData, short nDataLen, WORD wMarkCRC16, CWS_C
 	}
 	this->Unlock ();
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -835,7 +843,7 @@ bool CClan::Send_wsv_CLANMARK_REG_TIME( CWS_Client *pMember )
 	pCPacket->m_wsv_CLANMARK_REG_TIME.m_btSec = this->m_RegTIME.m_btSec ;
 
 	pMember->SendPacket( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 
@@ -1160,6 +1168,8 @@ bool CThreadGUILD::Run_GuildPACKET ( tagCLAN_CMD *pGuildCMD )
 					pCPacket->AppendString( szMsg );
 
 					pClan->SendPacketToMEMBER( pCPacket );
+
+					Packet_ReleaseNUnlock( pCPacket );
 				}
 			}
 			return true;

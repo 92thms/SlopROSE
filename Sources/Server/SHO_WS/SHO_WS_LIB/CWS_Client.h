@@ -2,7 +2,6 @@
 #define	__CWS_CLIENT_H
 //-------------------------------------------------------------------------------------------------
 #include "CWS_Account.h"
-#include "CPacketCODEC.h"
 
 extern CPacketCODEC	*g_pPacketCODEC;
 
@@ -161,6 +160,7 @@ public :
 
 		this->Send_Start( pCPacket );
 
+		Packet_ReleaseNUnlock( pCPacket );
 		return true;
 	}
 

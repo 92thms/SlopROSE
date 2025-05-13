@@ -126,6 +126,8 @@ void CNormalSECTOR::SendAddUserPacket( classUSER *pUSER, classPACKET *pCPacket )
 		pNode->DATA->Update_OwnerObjIDX( pUSER );
         if ( pNode->DATA->Make_gsv_ADD_OBJECT( pNewPacket ) )
             pUSER->SendPacket( pNewPacket );
+
+        Packet_ReleaseNUnlock( pNewPacket );
 	}
 
 	this->UnlockSector ();
@@ -156,6 +158,7 @@ void CNormalSECTOR::SendSubUserPacket( classUSER *pUSER, classPACKET *pCPacket )
 
 		if ( iLeftCnt >= iMaxLeftCnt ) {
             pUSER->SendPacket( pNewPacket );
+            Packet_ReleaseNUnlock( pNewPacket );
 
             iLeftCnt = 0;
 
@@ -168,6 +171,8 @@ void CNormalSECTOR::SendSubUserPacket( classUSER *pUSER, classPACKET *pCPacket )
     if ( iLeftCnt ) {
         pUSER->SendPacket( pNewPacket );
     }
+
+    Packet_ReleaseNUnlock( pNewPacket );
 
 	this->UnlockSector ();
 }
@@ -311,6 +316,8 @@ void CAgitSECTOR::SendAddUserPacket( classUSER *pUSER, classPACKET *pCPacket )
 		pNode->DATA->Update_OwnerObjIDX( pUSER );
         if ( pNode->DATA->Make_gsv_ADD_OBJECT( pNewPacket ) )
             pUSER->SendPacket( pNewPacket );
+
+        Packet_ReleaseNUnlock( pNewPacket );
 	}
 
 	this->UnlockSector ();
@@ -350,6 +357,7 @@ void CAgitSECTOR::SendSubUserPacket( classUSER *pUSER, classPACKET *pCPacket )
 
 		if ( iLeftCnt >= iMaxLeftCnt ) {
             pUSER->SendPacket( pNewPacket );
+            Packet_ReleaseNUnlock( pNewPacket );
 
             iLeftCnt = 0;
 
@@ -362,6 +370,8 @@ void CAgitSECTOR::SendSubUserPacket( classUSER *pUSER, classPACKET *pCPacket )
     if ( iLeftCnt ) {
         pUSER->SendPacket( pNewPacket );
     }
+
+    Packet_ReleaseNUnlock( pNewPacket );
 
 	this->UnlockSector ();
 }

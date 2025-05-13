@@ -47,7 +47,7 @@ void CAcceptTHREAD::Execute ()
 #else
 			Socket_Error("CAcceptTHREAD::Execute");
 #endif
-			continue;	// break;
+			break;
         }
 
         if ( !this->AcceptSOCKET( ClientSocket, SockADDR ) ) {

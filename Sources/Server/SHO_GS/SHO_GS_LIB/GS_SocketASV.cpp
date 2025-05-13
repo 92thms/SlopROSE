@@ -66,6 +66,8 @@ bool GS_asvSOCKET::Send_zws_ADD_ACCOUNT ( char *szAccount, char *szMD5Pass, char
 
 	m_SockASV.Packet_Register2SendQ( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -84,6 +86,8 @@ void GS_asvSOCKET::Send_zas_SUB_ACCOUNT (char *szAccount, BYTE btWhy, short nLev
 	pCPacket->AppendString( szAccount );
 
 	m_SockASV.Packet_Register2SendQ( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 void GS_asvSOCKET::Send_zas_CHECK_ACCOUNT ( BYTE btType, char *szAccount )
@@ -98,6 +102,8 @@ void GS_asvSOCKET::Send_zas_CHECK_ACCOUNT ( BYTE btType, char *szAccount )
 	pCPacket->AppendString( szAccount );
 
 	m_SockASV.Packet_Register2SendQ( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 }
 
 bool GS_asvSOCKET::Recv_zas_KICK_ACCOUNT ()
@@ -182,6 +188,7 @@ bool GS_asvSOCKET::Recv_zas_CHECK_ACCOUNT ()
 					pCPacket->m_HEADER.m_nSize = sizeof( gsv_ERROR );
 					pCPacket->m_gsv_ERROR.m_wErrorCODE = 0;
 					bAlive = pUser->Send_Start( pCPacket );
+					Packet_ReleaseNUnlock( pCPacket );
 				}
 			}
 			
@@ -209,6 +216,8 @@ bool GS_asvSOCKET::Send_cli_ALIVE ( char *szAccount )
 
 	m_SockASV.Packet_Register2SendQ( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -224,6 +233,8 @@ bool GS_asvSOCKET::Send_zas_SERVER_TYPE ( BYTE btType )
 	pCPacket->m_zas_SERVER_TYPE.m_btServerTYPE = btType;
 
 	m_SockASV.Packet_Register2SendQ( pCPacket );
+
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }

@@ -102,6 +102,8 @@ bool CObjEVENT::Send_gsv_SET_EVENT_STATUS ()
 
     this->GetZONE()->SendPacketToSectors( this, pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 

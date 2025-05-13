@@ -940,6 +940,7 @@ bool GS_CThreadSQL::Proc_cli_CHAR_LIST( tagQueryDATA *pSqlPACKET )
 		// 이 서버에는 등록된 케릭터가 없다.
 		g_pUserLIST->SendPacketToSocketIDX( pSqlPACKET->m_iTAG, pCPacket );
 	}
+	Packet_ReleaseNUnlock(pCPacket);
 
 	return true;
 }
@@ -1251,6 +1252,8 @@ bool GS_CThreadSQL::Proc_cli_SELECT_CHAR( tagQueryDATA *pSqlPACKET )
 				pUSER->Send_gsv_TELEPORT_REPLY( pUSER->m_PosCUR, pUSER->m_nZoneNO );
 			}
 
+			Packet_ReleaseNUnlock(pCPacket);
+
 			pUSER->m_Bank.Init ();
 			pUSER->m_btBankData = BANK_UNLOADED;
 
@@ -1471,6 +1474,8 @@ bool GS_CThreadSQL::Proc_cli_DELETE_CHAR( tagQueryDATA *pSqlPACKET )
 					pCPacket->m_wsv_DELETE_CHAR.m_dwDelRemainTIME = 0xffffffff;
 					pCPacket->AppendString ( pCharName );
 					pFindUSER->Send_Start( pCPacket );
+
+					Packet_ReleaseNUnlock(pCPacket);
 				}
 				return true;
 			}
@@ -1509,6 +1514,7 @@ bool GS_CThreadSQL::Proc_cli_DELETE_CHAR( tagQueryDATA *pSqlPACKET )
 			pCPacket->AppendString ( pCharName );
 
 			pFindUSER->Send_Start( pCPacket );
+			Packet_ReleaseNUnlock(pCPacket);
 		}
 	}
 
@@ -1871,6 +1877,7 @@ bool GS_CThreadSQL::Proc_cli_MEMO( tagQueryDATA *pSqlPACKET )
 					if ( pCPacket->m_HEADER.m_nSize > MAX_PACKET_SIZE-270 ) {
 						// 꽉찼다... 전송
 						g_pUserLIST->SendPacketToSocketIDX( pSqlPACKET->m_iTAG, pCPacket );
+						Packet_ReleaseNUnlock(pCPacket);
 
 						pCPacket = Packet_AllocNLock ();
 						if ( !pCPacket )
@@ -1883,6 +1890,7 @@ bool GS_CThreadSQL::Proc_cli_MEMO( tagQueryDATA *pSqlPACKET )
 				} while( this->m_pSQL->GetNextRECORD() );
 
 				g_pUserLIST->SendPacketToSocketIDX( pSqlPACKET->m_iTAG, pCPacket );
+				Packet_ReleaseNUnlock(pCPacket);
 
 				/*
 				DELETE FROM tblWS_MEMO WHERE (intSN IN (SELECT TOP 2 intSN FROM tblWS_MEMO WHERE txtNAME = 'navi' ORDER BY dwDATE ASC))
@@ -2016,6 +2024,8 @@ bool GS_CThreadSQL::Proc_cli_MALL_ITEM_REQ	( tagQueryDATA *pSqlPACKET )
 
 		pUSER->Send_Start( pCPacket );
 	}
+
+	Packet_ReleaseNUnlock(pCPacket);
 
 	return true;
 }

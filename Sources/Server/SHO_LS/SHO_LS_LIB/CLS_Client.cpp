@@ -60,6 +60,8 @@ bool CLS_Client::Send_lsv_LOGIN_REPLY(BYTE btResult, int iPayType)
 
 	this->Send_Start( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 
@@ -79,6 +81,7 @@ bool CLS_Client::Recv_cli_ACCEPT_REQ ()
     pCPacket->m_NetSTATUS.m_dwSocketIDs[0] = dwSenqSEQ;
 
 	this->Send_Start( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
     m_iRecvSeqNO = dwSenqSEQ;
 
@@ -122,6 +125,7 @@ bool CLS_Client::Recv_cli_CHANNEL_LIST_REQ ( t_PACKET *pPacket )
 		pServer->Make_lsv_CHANNEL_LIST_REPLY( pCPacket );
 
 		this->Send_Start( pCPacket );
+		Packet_ReleaseNUnlock( pCPacket );
 	}
 	return true;
 }
@@ -241,6 +245,8 @@ _PASS :
 _INVALID_AGE :
 	this->Send_Start( pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
     return true;
 }
 
@@ -256,6 +262,7 @@ bool CLS_Client::Send_srv_ANNOUNCE_TEXT (char *szText)
     pCPacket->AppendString( szText );
 
 	this->Send_Start( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 	return true;
 }
@@ -271,6 +278,7 @@ bool CLS_Client::Recv_mon_SERVER_LIST_REQ( t_PACKET *pPacket, bool bHideIP )
 	g_pListSERVER->Make_srv_SERVER_LIST_REPLY( pCPacket );
 
 	this->Send_Start( pCPacket );
+	Packet_ReleaseNUnlock( pCPacket );
 
 #ifdef	__VIEW_ACCOUNT
 	this->LockSOCKET ();
@@ -300,7 +308,7 @@ bool CLS_Client::Recv_mon_SERVER_STATUS_REQ( t_PACKET *pPacket )
 	pCPacket->m_wls_SERVER_STATUS_REPLY.m_iUserCNT	 = g_pListJOIN->GetLSIDCount();//g_pListSERVER->m_iCurUserCNT;
 
 	this->Send_Start( pCPacket );
-
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 

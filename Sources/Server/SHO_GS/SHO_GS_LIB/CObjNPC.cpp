@@ -494,6 +494,8 @@ bool CObjMOB::Change_CHAR (int iCharIDX)
 
     this->GetZONE()->SendPacketToSectors( this, pCPacket );
 
+	Packet_ReleaseNUnlock( pCPacket );
+
 	// 이거만 해도 될려나 ???
 	// 모델 데이타 !!!! 안해서 뻑~~~
 	this->m_nCharIdx	= iCharIDX;
@@ -633,6 +635,8 @@ bool CObjNPC::Send_gsv_SET_EVENT_STATUS ()
 
     this->GetZONE()->SendPacketToSectors( this, pCPacket );
 
+    Packet_ReleaseNUnlock( pCPacket );
+
 	return true;
 }
 //-------------------------------------------------------------------------------------------------
@@ -711,6 +715,8 @@ void CObjNPC::VSet_SHOW	( BYTE btShowMode )
 		pCPacket->m_gsv_SET_NPC_SHOW.m_bShow = this->m_bShow;
 
 		this->GetZONE()->SendPacketToSectors( this, pCPacket );
+
+		Packet_ReleaseNUnlock( pCPacket );
 	}
 }
 

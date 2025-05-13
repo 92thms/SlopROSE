@@ -419,6 +419,7 @@ bool AS_gumSOCKET::Send_GumsPACKET (int iMsgType, char *szString, int iSeqNO, bo
 
 	this->Log( false, (char*)&pCPacket->m_pDATA[ sizeof(t_PACKETHEADER) ] );
 
+	Packet_ReleaseNUnlock( pCPacket );
 	return true;
 }
 //-------------------------------------------------------------------------------------------------

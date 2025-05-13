@@ -431,6 +431,7 @@ public :
 			pCPacket->m_gsv_SKILL_LEARN_REPLY.m_nSkillIDX   = nSkillIDX;
 
 			this->SendPacket( pCPacket );
+			Packet_ReleaseNUnlock( pCPacket );
 
 			this->Skill_DELETE( nSkillSLOT, nSkillIDX );
 		}
@@ -450,6 +451,7 @@ public :
 		pCPacket->m_gsv_SET_ABILITY.m_iValue		= iValue;
 
 		this->SendPacket( pCPacket );
+		Packet_ReleaseNUnlock( pCPacket );
 
 		// 변경시 주위에 통보 필요한것들....
 		switch( wAbilityType ) {
