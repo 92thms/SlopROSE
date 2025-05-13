@@ -190,7 +190,7 @@ bool CWS_Server::Recv_zws_SERVER_INFO (t_PACKET *pPacket)
     szServerIP   = Packet_GetStringPtr (pPacket, nOffset);
 
     this->m_ServerNAME.Set( szServerName );
-    if ( *szServerIP )
+    if ( szServerIP != NULL && *szServerIP )
         this->m_ServerIP.Set( szServerIP );
     else
         this->m_ServerIP.Set( this->m_IP.Get() );
