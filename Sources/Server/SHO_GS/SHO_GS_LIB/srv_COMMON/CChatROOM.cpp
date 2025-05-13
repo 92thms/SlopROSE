@@ -94,7 +94,7 @@ bool CChatROOM::ReqKick( classUSER *pUSER, t_HASHKEY HashUSER )
 		pNode = pUSER->m_pNodeChatROOM->GetNext();
 		while( pNode ) {
 			if ( pNode->m_VALUE->m_HashCHAR == HashUSER ) {
-				// 내 ?겼다...
+				// 내 쫒겼다...
 				pNode->m_VALUE->Send_wsv_CHATROOM( CHAT_REPLY_KICKED, pNode->m_VALUE->m_iSocketIDX, NULL );
 
 				this->ReqLeft( pNode->m_VALUE );

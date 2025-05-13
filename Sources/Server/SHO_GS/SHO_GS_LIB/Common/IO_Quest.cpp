@@ -1672,7 +1672,7 @@ struct STR_REWD_012
 bool F_QSTREWD013 ( uniQstENTITY *pREWD, tQST_PARAM *pPARAM  )	
 {
 /*
-/// p초 후에 어떤 트리거 수행
+/// 몆초 후에 어떤 트리거 수행
 struct STR_REWD_013
 {
 	unsigned int	uiSize;

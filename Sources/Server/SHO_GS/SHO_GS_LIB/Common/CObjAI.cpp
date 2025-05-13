@@ -627,7 +627,7 @@ bool CObjAI::ProcMotionFrame (void)
 		/// 한번만 체크
 		if ( m_wState & CS_BIT_ONE ) 
 		{
-			/// iFrame < m_iCurMotionFRAME 애니매이션이 한바귀 돌아 iFrame이 리셋瑛뺐嚥裡?
+			/// iFrame < m_iCurMotionFRAME 애니매이션이 한바귀 돌아 iFrame이 리셋됬을경우지
 			if ( iFrame < m_iCurMotionFRAME || m_iCurMotionFRAME >= m_pCurMOTION->m_wTotalFrame ) 
 			{
 				// 모션이 완료 됐다.
@@ -640,7 +640,7 @@ bool CObjAI::ProcMotionFrame (void)
 
 	/// @todo m_iCurMotionFRAME = iFrame;	  이걸 넣었는데 어떨지..
 	/// 모션이 끝났다.
-	/// iFrame < m_iCurMotionFRAME 애니매이션이 한바귀 돌아 iFrame이 리셋瑛뺐嚥裡?
+	/// iFrame < m_iCurMotionFRAME 애니매이션이 한바귀 돌아 iFrame이 리셋됬을경우지
 	if ( iFrame < m_iCurMotionFRAME || m_iCurMotionFRAME >= m_pCurMOTION->m_wTotalFrame ) 
 	{
 		m_iCurMotionFRAME = iFrame;	

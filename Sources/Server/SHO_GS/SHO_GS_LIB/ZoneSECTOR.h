@@ -1,7 +1,7 @@
 /**
  * \ingroup SHO_GS
  * \file	ZoneSECTOR.h
- * \brief	ﾁｸﾀｻ ｱｸｼｺﾇﾏｴﾂ ｼｽﾅﾍ ﾃｳｸｮ
+ * \brief	존을 구성하는 섹터 처리
  */
 #ifndef __ZONESECTOR_H
 #define __ZONESECTOR_H
@@ -15,7 +15,7 @@
  * \ingroup SHO_GS_LIB
  * \class	CZoneSECTOR
  * \author	wookSang.Jo
- * \brief	ﾁｸﾀﾇ ｿｵｿｪﾀｻ ｱｸｼｺﾇﾏｴﾂ ｱ篌ｻ ｼｽﾅﾍ ﾅｬｷ｡ｽｺ
+ * \brief	존의 영역을 구성하는 기본 섹터 클래스
  */
 class CZoneSECTOR {
 protected:
@@ -63,8 +63,8 @@ public :
  * \ingroup SHO_GS_LIB
  * \class	CAgitSECTOR
  * \author	wookSang.Jo
- * \brief	ﾀﾏｹﾝ ﾁｸﾀﾇ ｿｵｿｪﾀｻ ｱｸｼｺﾇﾏｴﾂ ｼｽﾅﾍ ﾅｬｷ｡ｽｺ
- *			ｱ篌ｻｼｽﾅﾍ ﾅｬｷ｡ｽｺ CZoneSECTORｸｦ ｻﾓｹﾞﾀｽ
+ * \brief	일반 존의 영역을 구성하는 섹터 클래스
+ *			기본섹터 클래스 CZoneSECTOR를 상속받음
  */
 class CNormalSECTOR : public CZoneSECTOR
 {
@@ -84,8 +84,8 @@ public :
  * \ingroup SHO_GS_LIB
  * \class	CAgitSECTOR
  * \author	wookSang.Jo
- * \brief	ｾﾆﾁｮ ﾁｸﾀﾇ ｿｵｿｪﾀｻ ｱｸｼｺﾇﾏｴﾂ ｼｽﾅﾍ ﾅｬｷ｡ｽｺ
-  *			ｱ篌ｻｼｽﾅﾍ ﾅｬｷ｡ｽｺ CZoneSECTORｸｦ ｻﾓｹﾞﾀｽ
+ * \brief	아지트 존의 영역을 구성하는 섹터 클래스
+  *			기본섹터 클래스 CZoneSECTOR를 상속받음
 */
 class CAgitSECTOR : public CZoneSECTOR
 {
