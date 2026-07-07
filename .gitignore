@@ -19,3 +19,8 @@ Server/Server Data/3DDATA*
 **/*.log
 **/*.inc
 **/zz_build_count
+
+# CMake (Linux port build system)
+/build/
+CMakeCache.txt
+CMakeFiles/

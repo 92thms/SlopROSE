@@ -169,3 +169,14 @@ Anmerkung: `SHO_GS_DLL`, `SHO_LS_DLL`, `SHO_WS_DLL` sind hier bewusst ausgelasse
 
 **Damit ist die Datei-Liste oben die verbindliche Grundlage für die CMake-Targets in M1** (LIB_Util, LIB_Server, dann je Server: `SHO_xx_LIB`-Liste + `SHO_xx_EXE/main.cpp`, ohne die drei DLL-Shims und ohne die beiden bestätigt toten Dateipaare).
 
+## Weitere Funde beim Aufsetzen der CMake-Struktur (M1)
+
+**3. Zwei unterschiedliche `Common`-Verzeichnisse, teils inhaltlich divergent:** GameServer kompiliert eine eigene lokale Kopie mehrerer „Common"-Dateien (`Server/SHO_GS/SHO_GS_LIB/Common/`), WorldServer die geteilte (`Sources/Common/`). `IO_PAT.*`, `IO_Skill.*`, `IO_STB.*` sind zwischen beiden Kopien identisch, aber **`CItem.h`/`.cpp` und `CInventory.h`/`.cpp` weichen strukturell voneinander ab** (z.B. unterschiedliche Bitfeld-Breiten in `tagPartITEM`, GS nutzt 26 Bit für `m_nItemNo`, die geteilte Version nur 10 Bit). Das ist kein Redundanz-Versehen, sondern ein echter Gameplay-Fork zwischen den Servern. → In der CMake-Struktur bekommt jeder Server exakt die Datei-Variante, die er auf Windows tatsächlich gebaut hat; es gibt **kein** gemeinsames „Common"-Target für diese Dateien. `ETC_Math.cpp` weicht nur um eine Leerzeile ab (unkritisch).
+
+**4. `CBITArray.h` fehlt am erwarteten Ort:** `LIB_Util/CBITArray.cpp` inkludiert `CBITArray.h`, die Datei existiert aber nirgends in `LIB_Util` — sie liegt (Windows-Include-Pfad `$(SolutionDir)Client\Util`) unter `Sources/Client/Util/CBITArray.h`, einem eigentlich Client-only-Verzeichnis. Der Header selbst ist plain C++ ohne Windows-Abhängigkeit und wird auch von serverseitigem Code gebraucht (`CQuest.h`). Für M1 pragmatisch gelöst: `Sources/Client/Util` als zusätzlicher Include-Pfad für `LIB_Util` (PUBLIC, vererbt sich an alle Server). Kandidat für M6: den Header an einen sauberen gemeinsamen Ort verschieben, statt dauerhaft in den Client-Baum zu greifen.
+
+**5. Case-Sensitivity-Bug real vorhanden:** `LIB_Util/cdxHPC.cpp` inkludierte `"cdxhpc.h"` (klein geschrieben), die Datei heißt aber `CDXHPC.H`. Unter Windows (case-insensitives Dateisystem) unsichtbar, unter Linux ein harter Fehler. Behoben durch Anpassung des Include auf den echten Dateinamen.
+
+**Validierung:** `cmake` (Configure) läuft fehlerfrei durch (alle Quelldatei-Pfade lösen sich korrekt auf). Ein `cmake --build . -k` über den kompletten Graphen liefert **ausschließlich** noch offene Fehler der Form `windows.h`/`winsock.h`/`winsock2.h`/`crtdbg.h` nicht gefunden — also exakt die Klasse von Fehlern, die M2 beheben soll. Keine weiteren Pfad-, Case- oder Datei-Probleme mehr aufgetaucht.
+
+
